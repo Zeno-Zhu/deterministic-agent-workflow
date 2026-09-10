@@ -1,6 +1,6 @@
 ---
 name: workflow-skill-builder
-description: Use when creating, restructuring, or improving Codex skills and repeatable AI workflows for a personal studio. Turns recurring tasks, creator methods, scripts, prompts, and delivery processes into lean Skills with explicit contracts, atomic actions, validation, runtime complexity, judgment routing, recovery when needed, and evidence-driven evolution. Triggers on requests to create or upgrade a Skill, deterministic workflow, agent workflow, repeatable workflow, or to simplify an overbuilt process.
+description: Use when creating, restructuring, or improving Codex skills and repeatable AI workflows for a personal studio. Turns recurring tasks, creator methods, scripts, prompts, and delivery processes into lean Skills with explicit contracts, atomic actions, validation, runtime complexity, judgment routing, recovery, and evidence-driven evolution. Triggers on: create or upgrade a Skill, deterministic/agent/repeatable workflow, 确定性工作流, 工作流 skill, 可复用工作流, or simplifying an overbuilt process.
 ---
 
 # Workflow Skill Builder VNext
