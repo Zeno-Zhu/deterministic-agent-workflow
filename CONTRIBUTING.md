@@ -16,8 +16,8 @@
 # 1. 校验脚本仍然通过
 python3 scripts/validate-skill.py SKILL.md
 
-# 2. 不引入个人环境信息
-grep -RInE '/Users/|laozhu|\.trae|\.codex|\.DS_Store' . && echo "发现问题" || echo "clean"
+# 2. 不引入个人环境信息（说明类文件与 .gitignore 自身含检测模式，需排除）
+grep -RInE '/Users/|laozhu|\.trae|\.codex|\.DS_Store' --exclude=AGENTS.md --exclude=CONTRIBUTING.md --exclude=README.md --exclude=.gitignore . && echo "发现问题" || echo "clean"
 ```
 
 ## 约定

@@ -22,5 +22,6 @@
 
 ```bash
 python3 scripts/validate-skill.py SKILL.md
-grep -RInE '/Users/|laozhu|\.trae|\.codex' . || echo clean
+# 说明类文件自身含这些检测模式，排除以免自匹配
+grep -RInE '/Users/|laozhu|\.trae|\.codex' --exclude=AGENTS.md --exclude=CONTRIBUTING.md --exclude=README.md . || echo clean
 ```
