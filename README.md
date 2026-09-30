@@ -1,59 +1,93 @@
-# Deterministic Agent Workflow
+# workflow-skill-builder
 
-确定性 Agent 工作流设计与 Skill 构建方法。把重复工作变成复杂度合适、能够稳定执行和持续改进的 AI Agent Skill。
+> 一句话：**母工作流**。把「重复做的工作」变成复杂度合适、能稳定执行、**文件结构能长期不烂**、
+> **多平台多版本能分开调度**的 Skill。
 
-## 这是什么
+这是产 Skill 的 Skill。听到「建一个 skill」「升级这个工作流」「这个 skill 文件太乱了」
+「又要接一个新平台了」时，走它。
 
-一套面向个人工作室与 AI Agent 的方法论 + 可直接安装的 Skill（`workflow-skill-builder`）：
+**读者分级**：人看这页；AI 执行读 `SKILL.md`；AI 排障读 `ARCHITECTURE.md`。
 
-- **确定性约束执行过程**：输入与事实源、修改边界、验收条件、流转规则、失败出口和生效版本必须明确。
-- **不承诺生成内容完全一致**：模型输出和主观判断仍可能变化，因此按风险配置验证方式。
-- **三个设计视角**：Design（能力与边界）、Runtime（R0/R1/R2 执行结构）、Evolution（证据驱动增删规则）。
-- **六个基础 Primitive**：`Contract + Atomic Action + Gate + State + Loop + Commit`，按需组合，不要求全部实现。
-- **判断路由**：能脚本验证的不进 LLM；外部模型必须绑定具体 Gate、职责、上下文策略和预算。
-- **工作区硬规则**：Skill 目录只存可复用能力，一切任务产物写入目标项目中的新任务文件夹。
+## 它解决什么
 
-## 仓库结构
+- 重复做的工作散在聊天记录里，换个会话就重来一遍。
+- Skill 越写越大：`SKILL.md` 里塞满踩坑故事、日志片段、废弃方案，AI 每次读一遍烧 token。
+- 踩坑经验记了但没人看；同一个坑反复踩。
+- 试验代码和正式代码混在一起，分不清哪个能删。
+- ★ **多平台 / 多版本混在一个 skill 里**：长出 if/else 分支，参数串味，报错查不出来。
 
-```text
-deterministic-agent-workflow/
-├── SKILL.md                              # 主方法文档（可直接作为 Codex Skill 安装）
-├── references/
-│   ├── personal-studio-standard.md       # 工作室工作流标准（Runtime 分级、验证分层、进化门禁）
-│   └── vnext-contracts.md                # 各类契约模板（Task/Stage/Action/Gate/Loop/State/Commit/Recovery）
-├── scripts/
-│   └── validate-skill.py                 # 零依赖 SKILL.md 机械校验脚本
-├── LICENSE                               # MIT
-├── CONTRIBUTING.md                       # 贡献说明
-└── AGENTS.md                             # 面向 AI Agent 的项目速览
+它管三件事：**能力怎么设计**（契约 / Runtime / Gate）、**文件怎么活**（分层 / 索引 / 晋升 / 毕业）、
+**多平台怎么拆**（中控 + 渠道线 + API 中控三件套）。
+
+## 什么时候用 / 不用
+
+| ✅ 用 | ❌ 不用 |
+|---|---|
+| 把一套重复流程固化成 skill | 一次性问题，直接问就行 |
+| 重构一个已经膨胀的 skill | 单纯改一个文件里的错别字 |
+| 决定踩坑经验该写哪里、什么该晋升 | 需要多 Agent 委员会投票的场景 |
+| 给 skill 补 README / 技术文档 | 用固定轮数替代验收条件 |
+| 要接第二个平台 / 第二个版本 | 只是换个分辨率 / 画幅（那是 config） |
+
+## 30 秒上手
+
+直接对 AI 说：**「用 workflow-skill-builder 建/升一个 Skill」**，并给出目标、输入、期望输出。
+
+自检两条命令：
+
+```bash
+python3 scripts/validate-skill.py /absolute/path/to/target-skill   # 22 项机械检查
+python3 tests/test_validator_negative.py                          # 反面样本回归（改过校验器才需要）
 ```
 
-## 快速开始
+`PASS` 即通过；`FAIL` 会逐条列出缺什么。
 
-### 方式一：作为 Codex / Agent Skill 安装
+## 目录导航
+
+| 路径 | 层 | 是什么 | AI 要读吗 |
+|---|---|---|---|
+| `SKILL.md` | H | 主方法：九步创建法 + 文件治理四条 + 多平台四条 | **每次必读** |
+| `references/personal-studio-standard.md` | W | 工作室标准：三维度、六 Primitive、验证分层、进化门禁 | 建/重改 skill 时读 |
+| `references/vnext-contracts.md` | W | 契约模板库（§11 文件治理契约、§12 中控与渠道线契约） | 按需 |
+| `references/file-governance.md` | W | **文件架构与知识治理完整规范** | 产出物 >1 个文件时必读 |
+| `references/multi-platform-routing.md` | W | **多平台 / 多版本拆分与调度规范** | 有多个平台或版本时必读 |
+| `scripts/validate-skill.py` | W | 零依赖机械校验（5 组 22 项） | 每次产出后跑 |
+| `tests/` | C | 校验器的反面样本回归 | **不读**；改校验器后跑 |
+| `templates/` | W | 产出物骨架 8 份（README / ARCHITECTURE / 坑索引 / 坑卡 / 冷存声明 / 中控 / 路由表 / registry） | 产出时读 |
+| `ARCHITECTURE.md` | W | 本 skill 的文件地图与排障表 | 排障时读 |
+
+## 三条最容易忘的硬规则
+
+1. **能被「按需读」的东西，永远不进「每次必读」的地方。**
+   `SKILL.md` 的 `Load First` 只允许引用 H / W 层。冷存层要有索引 + `⚠ 默认不读` 自声明。
+2. **踩坑先备案，别急着写进 skill。** 命中 1–2 次只进冷存；**≥3 次且通用且可执行**才晋升。
+   单项目 / 单次经验**禁止**进 `SKILL.md`。
+3. **多平台就拆，别加 if/else。** 一个中控只做路由，N 条渠道线各自自包含；
+   加新平台 = 加一个 skill + 路由表一行，**不动存量 skill**。
+
+## 依赖与前置
+
+- Python 3.9+（只跑校验脚本，纯标准库，**零第三方依赖**）。
+- 无外部服务、无凭据、无网络要求。
+
+## 维护入口
+
+- 改方法 → `SKILL.md`
+- 改细节规范 → `references/`
+- 改校验规则 → `scripts/validate-skill.py`（改完必须能对自身 `PASS`，**并跑 `tests/test_validator_negative.py` 确认检查仍然有效**）
+- 改产出物骨架 → `templates/`
+- 排障 → `ARCHITECTURE.md` §2「现象 → 查哪里」
+
+## 安装
 
 ```bash
 git clone https://github.com/Zeno-Zhu/deterministic-agent-workflow.git \
   ~/.codex/skills/deterministic-agent-workflow
 ```
 
-之后对 Agent 说"用 workflow-skill-builder 创建/优化一个 Skill"即可触发。
+之后对 Agent 说「用 workflow-skill-builder 创建/优化一个 Skill」即可触发。
 
-### 方式二：仅当方法论阅读
-
-直接阅读 [SKILL.md](SKILL.md)，需要细节时再查 `references/` 下的两份文档。
-
-### 校验你产出的 Skill
-
-```bash
-python3 scripts/validate-skill.py /absolute/path/to/your/SKILL.md
-```
-
-脚本为纯标准库实现（Python 3.9+），检查：
-
-- YAML frontmatter 有效性（`name` 格式、`description` 非空）；
-- 工作区隔离规则（任务产物不写入 Skill 目录、脚本使用显式输出路径）；
-- 受控迭代规则（复盘与迭代、暂存后审阅再采用、held-out 门禁提示）。
+> ⚠ **仓库名与 skill 名不同**：仓库叫 `deterministic-agent-workflow`，skill 名是 `workflow-skill-builder`。
 
 ## 适用与不适用
 
@@ -62,6 +96,7 @@ python3 scripts/validate-skill.py /absolute/path/to/your/SKILL.md
 | 重复触发的创作 / 数据 / 编码 / 文档工作流 | 一次性问题（直接问即可） |
 | 需要跨会话恢复、多版本候选的长任务 | 需要多 Agent 委员会投票的场景 |
 | 想让 Skill 按证据增删规则而非只增不减 | 试图用固定轮数替代验收条件 |
+| 同一件事有多个平台 / 版本要分开调度 | 只是同协议换参数取值 |
 
 ## License
 

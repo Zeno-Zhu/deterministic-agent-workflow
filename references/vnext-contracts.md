@@ -14,6 +14,8 @@
 8. State、Commit 与 Recovery
 9. Validation Design
 10. Evolution Gate
+11. Skill 文件治理契约
+12. 中控与渠道线契约
 
 ## 1. Runtime 选择
 
@@ -298,3 +300,114 @@ Commit 最少记录：
 ```
 
 不能删除 Protected Rules。没有可检查信号时，不运行自动进化。
+
+## 11. Skill 文件治理契约
+
+完整规则见 `references/file-governance.md`。新建或升级 Skill 时，至少填这张表并写进目标 Skill 的 `ARCHITECTURE.md`：
+
+```markdown
+## 文件治理
+
+- 分层：<每个目录属于 H / W / C / D 哪一层>
+- 冷存索引：<pitfalls/INDEX.md、logs/README.md 等索引文件位置；无则写 none>
+- 默认不读声明：<哪些目录含 `⚠ 默认不读` 自声明 README>
+- 测试归属：tests/ 放什么；scripts/ 里有没有未毕业的 test（必须为 none）
+- 日志归属：任务目录 or Skill 目录；保留策略
+- 文档三件套：SKILL.md（必）/ README.md（有 / 省，原因）/ ARCHITECTURE.md（有 / 省，原因）
+- 重构触发器：<当前是否已接近 §7 任一阈值>
+```
+
+### 踩坑条目契约
+
+`pitfalls/INDEX.md` 的每一行对应一条坑：
+
+```markdown
+| ID | 一句话现象 | 命中 | 处置 | 详情 | 通用化 |
+|---|---|---|---|---|---|
+```
+
+- `命中`：同一坑再次出现就 +1，是唯一的量化依据。
+- `处置`：`备案`（1–2 次）/ `已晋升`（≥3 次且通用且可执行）/ `降级`（不可通用 → 移出 Skill）。
+- `通用化`：`✅ 一类操作` / `❌ 项目或本机专属`。
+- 晋升三条件必须**同时**满足：频次 ≥3、通用、可执行。**单项目 / 单次经验禁止进 `SKILL.md`。**
+
+### 冷存层访问契约
+
+```markdown
+### Cold Store Access: <目录名>
+
+- Index: <索引文件路径>
+- Read Trigger: <AI 在什么条件下才允许读正文>
+- Read Scope: <只读索引命中的那一份，还是允许通读（通读=设计失败）>
+- Declared In: <该目录的自声明 README 路径>
+- Never Read By: <SKILL.md 的 Load First 明确不引用本目录>
+```
+
+## 12. 中控与渠道线契约
+
+完整规则见 `references/multi-platform-routing.md`。**多平台 / 多版本任务必须填两份契约：中控一份、每条渠道线一份。**
+
+### 12.1 中控契约（Router）
+
+```markdown
+## Router Contract
+
+- Domain: <这个域是什么>
+- Default Channel: <未点名时走哪条>
+- Declare On Use: yes｜未点名时必须显式声明走了哪条
+- Routing Table: <references/routing-table.md 路径>
+- Shared Contract: <跨渠道公共约定放哪>
+- Load Policy: <只加载被路由到的那一条渠道 skill，其余不读>
+- Forbidden In This Skill:
+  - <渠道> 的参数上限 / 计费 / 字段名 / 模型名 / 报错特征 / 坑
+  - 各渠道 skill 的引用写进 Load First
+- Channels: <渠道 A → 子 skill 名；渠道 B → 子 skill 名；…>
+- Switch Checklist: <换渠道时读哪个协议 + 加载哪个 skill>
+```
+
+### 12.2 渠道线契约（Channel）
+
+```markdown
+## Channel Contract
+
+- Channel: <渠道名>
+- Skill Name: <domain>-<channel>
+- Status: active / legacy（legacy 默认不被中控选中）
+- Identity: <模型标识逐字符照抄 / 端点 / 鉴权>
+- Hard Limits: <参考图上限 / 时长 / 画幅 / 音频 / 必填字段 / 资源 TTL>
+- Billing: <model + unit price + 一次典型任务成本 + 提交前成本闸怎么算>
+- Flow: <本渠道特有的步骤链；与他渠道不同处标 ★>
+- Failure Signals: <信号 → 真/假 → 处置>
+- Own Pitfalls: <只记本渠道的；跨渠道共性归中控或域级 skill>
+- No Cross-Reference: <确认没有引用其他渠道的结论>
+```
+
+### 12.3 拆分判据
+
+```markdown
+## Split Decision
+
+- 模型名不同：<是 / 否>
+- 参数约束不同：<是 / 否>
+- 计费模型不同：<是 / 否>
+- 调用协议不同：<是 / 否>
+- 流程步骤不同：<是 / 否>
+- 资源生命周期不同：<是 / 否>
+- 失败模式不同：<是 / 否>
+⇒ <任一为「是」→ 拆成渠道 skill；全为「否」→ 应做成 config/，不是新 skill>
+```
+
+### 12.4 代码侧 API 中控契约
+
+```markdown
+## API Hub Contract
+
+- Registry: <平台/版本一行：模型名、端点、鉴权、计费、上限、能力开关、失败信号>
+- Clients: <每个平台一个 client 的文件名>
+- Scheduler: <选路 + 限流 + 重试 + 计费闸的实现位置>
+- Routing Order: capability → cost → availability（固定，勿改序）
+- Model Name Policy: <确认业务代码里没有模型名字符串>
+- Cost Gate: <提交前如何算预估成本；算不出时的行为>
+- Docs Split: <一渠道一份协议文档的路径清单>
+```
+

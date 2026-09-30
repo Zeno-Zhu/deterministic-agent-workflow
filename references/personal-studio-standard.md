@@ -128,17 +128,18 @@ Skill 是否存在由复用价值决定，Runtime 有多复杂由任务复杂度
 
 ### Skill 目录
 
-只保存可复用能力：
+只保存可复用能力。**完整骨架与 H/W/C/D 分层见 `references/file-governance.md` §1–§2**，此处不复述。
+一句话：`SKILL.md` + `README.md` + `ARCHITECTURE.md` + `references/` + `scripts/` + `config/` + `templates/` + `assets/`
+＋ 冷存层（`tests/`、`pitfalls/`、`logs/`）＋ 死稿层（`_归档/`），按需创建，**禁止为结构完整建空目录**。
 
-```text
-skill-name/
-├── SKILL.md
-├── references/   # 详细方法、字段与评价规则
-├── scripts/      # 重复且需要确定性的动作
-├── config/       # 项目变量与参数模板
-├── assets/       # 可复用资源
-└── evals/        # 独立、稳定、可复用的大型评测集，少数情况
-```
+### 多平台时的边界
+
+同一件事有多个平台 / 版本能干时，**不把它们塞进一个 Skill**：
+拆成「**一个中控 + N 条渠道线**」，每条渠道线是**独立 Skill、自包含**；
+中控只做路由，**不内联任何渠道的参数、计费、字段名、模型名、报错特征**。
+
+判据与调度纪律见 `references/multi-platform-routing.md`。
+一句话判据：模型名 / 参数约束 / 计费 / 协议 / 流程 / 资源生命周期 / 失败模式 —— **任一不同就拆**。
 
 ### Task 目录
 

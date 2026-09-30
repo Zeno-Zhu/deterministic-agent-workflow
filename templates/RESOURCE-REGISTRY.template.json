@@ -1,0 +1,76 @@
+{
+  "_comment": "API 中控 registry 骨架。★ 模型名只允许出现在本文件，业务代码里禁止硬编码。换平台 = 改这里一行。",
+  "_schema_version": "1",
+  "channels": {
+    "<channel-a>": {
+      "display_name": "<人类可读名>",
+      "status": "active",
+      "model_id": "<逐字符照抄，下划线/连字符都不能错>",
+      "endpoint": "<URL>",
+      "auth": {
+        "type": "env",
+        "env_var": "<ENV_NAME>"
+      },
+      "billing": {
+        "model": "per_call",
+        "unit_price": 2.0,
+        "currency": "CNY",
+        "note": "<按次 ≈2 元；按秒写 per_second；按时写 per_hour>"
+      },
+      "capabilities": {
+        "reference_images": 10,
+        "reference_audio": false,
+        "duration": {
+          "mode": "fixed",
+          "seconds": 30,
+          "note": "fixed 或 range（用 min/max）"
+        },
+        "aspect_ratios": ["9:16", "16:9"]
+      },
+      "resource_lifecycle": {
+        "url_ttl_seconds": 3600,
+        "dedup": false
+      },
+      "failure_signals": [
+        {
+          "signal": "<上游返回的错误文本或状态码>",
+          "is_genuine": false,
+          "action": "retry_with_correct_model_id",
+          "note": "<这个坑的判定依据>"
+        }
+      ],
+      "docs": "<路径，一渠道一份，禁止混装>",
+      "skill": "<domain>-<channel-a>"
+    },
+    "<channel-b>": {
+      "display_name": "<>",
+      "status": "legacy",
+      "model_id": "<>",
+      "endpoint": "<>",
+      "auth": { "type": "env", "env_var": "<>" },
+      "billing": { "model": "per_second", "unit_price": 0.06, "currency": "USD" },
+      "capabilities": { "reference_images": 9, "reference_audio": true },
+      "resource_lifecycle": { "url_ttl_seconds": 0, "dedup": true },
+      "failure_signals": [],
+      "docs": "<路径>",
+      "skill": "<domain>-<channel-b>"
+    }
+  },
+  "routing": {
+    "default": "<channel-a>",
+    "order": ["capability", "cost", "availability"],
+    "_comment": "★ 选路顺序固定：能力是否满足 → 成本 → 可用性。能力不满足直接淘汰，不参与比价。",
+    "rules": [
+      {
+        "when": { "needs_reference_audio": true },
+        "pick": "<channel-b>",
+        "why": "<能力不满足的渠道直接出局>"
+      }
+    ]
+  },
+  "cost_gate": {
+    "enabled": true,
+    "estimate_before_submit": true,
+    "_comment": "★ 提交前必须先算预估成本并过闸；没有成本估算的批量提交视为缺陷。"
+  }
+}

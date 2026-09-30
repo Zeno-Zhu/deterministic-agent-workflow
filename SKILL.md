@@ -1,11 +1,11 @@
 ---
 name: workflow-skill-builder
-description: Use when creating, restructuring, or improving Codex skills and repeatable AI workflows for a personal studio. Turns recurring tasks, creator methods, scripts, prompts, and delivery processes into lean Skills with explicit contracts, atomic actions, validation, runtime complexity, judgment routing, recovery, and evidence-driven evolution. Triggers on: create or upgrade a Skill, deterministic/agent/repeatable workflow, 确定性工作流, 工作流 skill, 可复用工作流, or simplifying an overbuilt process.
+description: Use when creating, restructuring, or improving Codex skills and repeatable AI workflows for a personal studio. Turns recurring tasks, creator methods, scripts, prompts, and delivery processes into lean Skills with explicit contracts, atomic actions, validation, runtime complexity, judgment routing, recovery, evidence-driven evolution, and governed file architecture. Triggers on: create or upgrade a Skill, deterministic/agent/repeatable workflow, 确定性工作流, 工作流 skill, 可复用工作流, 文件结构/文件治理, 踩坑经验沉淀, test 代码转正, 给 skill 加 README 或技术文档, or simplifying an overbuilt process.
 ---
 
 # Workflow Skill Builder VNext
 
-把可复用能力设计成复杂度合适、能够稳定执行和持续改进的 Skill。
+把可复用能力设计成复杂度合适、能够稳定执行、**文件结构可长期维护**的 Skill。
 
 确定性主要约束输入、事实版本、修改边界、验收条件、流转规则和正式生效结果；不承诺模型生成内容或主观判断完全一致。
 
@@ -15,6 +15,8 @@ description: Use when creating, restructuring, or improving Codex skills and rep
 
 1. `references/personal-studio-standard.md`
 2. `references/vnext-contracts.md` 中与当前 Runtime 和判断节点有关的部分
+3. `references/file-governance.md` —— **只要产出物超过一个文件，就必须读**
+4. `references/multi-platform-routing.md` —— **只要这件事有多个平台 / 多个版本能干，就必须读**
 
 三层架构只作为思考视角，不作为强制文件结构：
 
@@ -38,10 +40,11 @@ description: Use when creating, restructuring, or improving Codex skills and rep
 
 ## Step 0｜判断复用价值与 Runtime
 
-把两个问题分开判断：
+把**三个**问题分开判断：
 
 1. **是否值得 Skill 化**：是否存在稳定触发、输入、输出、方法或长期复用价值。一次 Prompt 能完成，也可以是轻量 Skill。
 2. **需要多复杂的 Runtime**：由真实执行难度决定，不因未来可能需要而提前搭架构。
+3. **是不是多平台 / 多版本任务**：同一件事有多个平台或版本能干吗？是 → **拆成中控 + 渠道线**，不要塞进一个 skill（见「多平台与多版本」节）。
 
 | Profile | 适用情况 | 最小运行结构 |
 |---|---|---|
@@ -49,7 +52,7 @@ description: Use when creating, restructuring, or improving Codex skills and rep
 | R1 Structured | 固定多步、阶段 Gate、局部修复 | Stage → Atomic Actions → Gate → Next |
 | R2 Stateful | 长任务、跨窗口、外部等待、多版本、中断恢复 | Restore → Resolve → Execute → Validate → Route → Commit → Persist |
 
-## VNext 八步创建法
+## VNext 九步创建法
 
 ### 0. 判断复用价值与 Runtime
 
@@ -129,7 +132,12 @@ R2 的恢复必须区分失败与 `Unknown Outcome`。工具超时或中断后�
 
 优先把 L1 交给脚本或工具。至少完成一次真实运行，或对无法实跑的流程进行可验证的端到端走查。
 
-### 7. Evidence-driven Evolution
+### 7. 归档文件架构
+
+**一个 Skill 是否会长寿，取决于第 7 步，而不是前三步。**
+落盘前必须给每个文件定层、给每个会长大的目录定索引。见下一节与 `references/file-governance.md`。
+
+### 8. Evidence-driven Evolution
 
 把任务要求、关键输入与输出、验证结果、用户修正、通过或失败原因保存在任务目录。原始聊天记录不作为默认数据集。
 
@@ -143,15 +151,105 @@ R2 的恢复必须区分失败与 `Unknown Outcome`。工具超时或中断后�
 
 ```text
 skill-name/
-├── SKILL.md
-├── references/   # 稳定方法、字段和评价规则，按需
-├── scripts/      # 重复且需要确定性的动作，按需
-├── config/       # 项目差异与参数模板，按需
-├── assets/       # 可复用输出资源，按需
-└── evals/        # 真正独立且可复用的大型评测集，少数情况
+├── SKILL.md              # H｜触发 + 主流程 + Gate + 输出 + 通用避坑（唯一必读）
+├── README.md             # H｜人看的定位与上手；AI 也读它的速览段
+├── ARCHITECTURE.md       # W｜文件地图 + 排障定位表 + 改动影响面
+├── references/           # W｜稳定方法、字段和评价规则，按需
+├── scripts/              # W｜转正后的确定性动作，按需
+├── config/               # W｜项目差异与参数模板，按需
+├── templates/            # W｜产出物骨架，按需
+├── assets/               # W｜可复用输出资源，按需
+├── tests/                # C｜仍在跑的回归测试，按需
+├── pitfalls/             # C｜踩坑治理：INDEX.md 是唯一默认可读项
+├── logs/                 # C｜跨任务复用的运行日志，按需
+└── _归档/                # D｜死稿层：禁止读取
 ```
 
 State、checkpoint、评审、trace 和本次输出属于任务目录。不要因为方法论里存在这些概念就在 Skill 中创建空目录。
+
+★ 若这件事**有多个平台 / 多个版本能干** → **不要把分支塞进上面这个骨架**，
+而是拆成「中控 + N 条渠道线」（见下一节的「多平台与多版本」）。
+
+## 文件架构与知识治理
+
+完整规范（阈值、模板、落地清单）见 `references/file-governance.md`。落盘前必须过这五条。
+
+### 7.1 每个文件先定层：H / W / C / D
+
+**H** 每次必读（`SKILL.md`、README 速览段）｜**W** 触发才读（`references/`、`templates/`、`ARCHITECTURE.md`）｜**C** 默认不读，只有索引命中才读指向的那一份（`pitfalls/` 正文、`logs/`）｜**D** 禁止读（废案、旧版）。
+
+总原则：**能被「按需读」的东西，永远不要放进「每次必读」的地方。**
+推论：`SKILL.md` 的 `Load First` **只允许引用 H / W 层**；引用 C / D 层 = 结构错误。
+
+### 7.2 会长大的目录必须有索引 + 自声明
+
+冷存 / 死稿目录内放 `README.md`，**第一段第一句**写 `⚠ 默认不读：<什么条件下才读>`。
+没有索引的冷存层等于不可用 —— AI 要么通读（烧 token），要么永远不读（等于没记）。
+
+### 7.3 踩坑：备案 → 命中计数 → ≥3 次晋升
+
+`pitfalls/INDEX.md` 一行一坑，**命中次数是唯一量化依据**：1–2 次**备案**（详情进 `pitfalls/PNNN-*.md`，默认不读）；≥3 次且**通用**且**可执行** → **晋升**进 `SKILL.md`；不可通用 → **降级移出 Skill**，写进项目自己的文档。
+
+**反污染红线**：单项目 / 单次操作的经验**绝不允许**直接写进 `SKILL.md`。晋升前先做一次「换个项目还成立吗」自检，答不上来就不晋升。每晋升一条，同时找一条能删的旧条目。
+
+### 7.4 test 毕业制
+
+`tests/` 放开发期测试；`scripts/` 下**永远不该出现** `test_*` / `*_test.*`。
+**有用 → 转正**：移到 `scripts/`，**文件名去掉 `test_` / `_test` / `try_` / `tmp_` / `skill` 等草稿标记**，改成语义化能力名（`test_parse_groups.py` → `parse_groups.py`），并在 `ARCHITECTURE.md` 登记。
+**废掉 / 失败 → 直接删除**：不进 `tests/`、不进 `SKILL.md`、不进冷存。
+判据：**`scripts/` 里的文件必须「产品要它」；`tests/` 里的文件必须「我还在跑它」。两个都不满足 → 删。**
+
+### 7.5 文档三件套
+
+`SKILL.md`（AI 执行，**永不可省**）/ `README.md`（人 + AI 速览，单文件且 ≤80 行时可省）/ `ARCHITECTURE.md`（后续 AI 的排障地图：文件地图 + 现象→查哪里 + 改动影响面 + 校验重建；有 `scripts/` 或 ≥2 份 `references/` 时**必须有**）。模板见 `templates/`。
+
+日志与总结必须分开：原始日志进冷存、只读尾部 N 行；给 AI 看的结论进 `references/` 或 `SKILL.md`。
+
+## 多平台与多版本
+
+完整规范见 `references/multi-platform-routing.md`。硬规则四条。
+
+### 8.1 满足任一就拆成独立渠道 skill
+
+**模型名不同 / 参数约束不同 / 计费模型不同 / 调用协议不同 / 流程步骤不同 / 资源生命周期不同 / 失败模式不同。**
+**反判据（不该拆）**：只是同一协议下的参数取值不同（换分辨率、换画幅、换语气档）→ 那是 `config/`，不是新 skill。
+
+### 8.2 结构：一个中控 + N 条渠道线（互不嵌套）
+
+```text
+skills/
+├── <domain>-creation        # ★ 中控（router）：只做路由
+├── <domain>-<channel-a>     # 渠道线：自包含
+└── <domain>-<channel-b>     # 渠道线：自包含
+```
+
+渠道线是**独立 skill，不嵌进中控目录** —— 只有被路由到的那一条会进上下文，**其余一个字都不读**。
+这就是省 token 的全部机制，也是拆分的全部理由。
+
+### 8.3 中控只做三件事
+
+**辨识渠道 → 只加载那一条 → 声明用了哪条。**（未点名时走默认渠道，并**显式说出**走了哪条）
+
+**严禁内联**任何渠道的：参数上限、计费、字段名、模型名、报错特征、坑。
+中控的 `Load First` **只列路由表，不列各渠道 skill**。
+路由表的「子 skill」列必须是真实存在的同级 skill —— **死路由会被校验脚本判错**。
+
+### 8.4 多版本 = 多个渠道 skill，不用 if/else
+
+同一平台不同版本各建一个 skill（`...-jimeng20` / `...-jimeng25`），弃用版本标 `历史`、默认不被选中。
+★ **加新版本 = 加一个 skill + 路由表加一行，不动任何存量 skill** —— 这是拆分最大的收益。
+
+### 8.5 代码侧同步拆：registry / client / scheduler
+
+```
+registry（模型名、端点、鉴权、计费、上限、能力开关、失败信号）
+client（每个平台一个，只认自己那套字段）
+scheduler（选路 + 限流 + 重试 + 计费闸）
+```
+
+★ **业务代码里禁止出现模型名字符串**；能力查询走 registry，不写 `if 平台 == X`。
+选路顺序固定：`能力是否满足 → 成本 → 可用性`（能力不满足直接淘汰，**不参与比价**）。
+**协议文档按渠道分割，禁止一份文档写多个平台** —— 混装是参数串味的头号来源。
 
 ## Autonomy
 
@@ -172,7 +270,7 @@ Autonomy 只表示是否可自主执行，不等于拥有最终业务决策权�
 1. 在任务目录保存请求、关键输入与输出、验证结果、用户修正，以及通过或失败原因；不要默认收集整段原始会话。
 2. 一次只改一个目标 `SKILL.md`。积累足够同类证据后，新建 evolution 任务目录；环境提供 `skillopt-sleep` 时，用 `--project <task-dir> --target-skill-path <skill>` 处理，否则在该目录手工建立候选与对照验证。
 3. 先执行 `dry-run` 或等价的无改动预检；真实候选最多四条编辑，保留 held-out 集。候选只能暂存，审阅报告和候选后才允许采用，定时任务不能自动采用。
-4. 同时保留接受和拒绝原因。重复、已验证的问题才变成规则；重复人工动作才脚本化；重复项目差异才配置化。
+4. 同时保留接受和拒绝原因。重复、已验证的问题才变成规则；重复人工动作才脚本化；重复项目差异才配置化。**踩坑先走 §7.3 的备案 → 晋升路径，不要一次就写成永久规则。**
 5. Evolution 必须支持 Add、Modify、Remove。用户明确要求、任务契约、权限边界和外部硬约束属于 Protected Rules，不能因近期样本无退步而删除。
 6. 质量候选需要目标质量改善且关键指标无不可接受退步；Pruning 候选可以在关键质量不下降时，以 Token、延迟、调用次数或维护负担的可验证下降通过。
 
@@ -186,6 +284,8 @@ Autonomy 只表示是否可自主执行，不等于拥有最终业务决策权�
 python3 /path/to/workflow-skill-builder/scripts/validate-skill.py \
   /absolute/path/to/target/SKILL.md
 ```
+
+脚本会查：frontmatter、工作区隔离、受控迭代，以及**文件治理**（草稿残留、未毕业 test、冷存层自声明、索引缺失、文档三件套、Load First 引用冷存层）。
 
 再用至少一个真实请求走查 Runtime、Gate、任务目录和最终交付路径。
 
@@ -204,3 +304,6 @@ python3 /path/to/workflow-skill-builder/scripts/validate-skill.py \
 - 把任务状态、评审、trace、预览和交付物写进 Skill 目录。
 - 只有增加规则、不能删除规则的单向进化。
 - 多层审批、企业流程语言和不改变执行的说明。
+- **把踩坑故事、日志原文、测试残留、失败实验写进 `SKILL.md`** —— 它们是 token 黑洞。
+- **为结构完整建空目录**；结构只在实际有东西要放时才长出来。
+- **用 `.bak` / `_v2` / `_final` / `副本` 管版本** —— 交给 git。
