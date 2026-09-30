@@ -9,5 +9,6 @@
 | P001 | 校验器拆出子包后，跑一次就多出 `__pycache__`，下次校验被 4.2 判 FAIL | 1 | 备案 | P001-validator-pycache.md | ✅ 一类操作（带子包的 CLI 入口都会碰） |
 | P002 | `if not body` 把「正文为空」当成「frontmatter 不合法」，空壳 skill 全项放过 | 1 | 备案 | P002-empty-body-early-return.md | ✅ 一类操作（哨兵值语义混淆） |
 | P003 | 密钥正则跨字符串边界，把一行 `console.log` 的展示文本判成硬编码密钥 | 1 | 备案 | P003-secret-regex-cross-string.md | ✅ 一类操作（宽正则缺形态约束） |
+| P004 | 跨轮次整体重写同一文件被拒：`File has not been read yet` | 1 | 备案 | P004-rewrite-requires-fresh-read.md | ✅ 一类操作（读状态按轮次管理） |
 
 → 命中 ≥3 次且通用且可执行，才晋升进 `SKILL.md`；**单项目 / 单次的具体值永远不进。**

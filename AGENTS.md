@@ -21,7 +21,7 @@
 | `references/vnext-contracts.md` | 契约模板库（§11 文件治理、§12 中控与渠道线、§13 代码工程） |
 | `references/file-governance.md` | **文件层唯一权威**：分层、踩坑治理、test 毕业制、读取预算分档 |
 | `references/multi-platform-routing.md` | **多平台层唯一权威**：拆分判据、中控硬规则、多版本、调度纪律 |
-| `references/code-engineering.md` | **代码层唯一权威**：问题分类 A–J、公共模块、JSON 契约、任务生命周期与对账、输出协议 |
+| `references/code-engineering.md` | **代码层唯一权威**：问题分类 A–J、调试四阶段、公共模块、提示词与模型版本化、JSON 契约、任务生命周期·幂等·可续跑、测试与黄金集、输出协议、**改动边界**、版本门；文末附**规则来源与明确不吸收的部分** |
 | `scripts/validate-skill.py` | 零依赖校验入口（四组；实现拆在 `scripts/wfsb_check/`），返回 0 即通过 |
 | `scripts/wfsb_check/*.py` | 校验实现：`constants` / `checks_core` / `checks_layout` / `checks_quality`（每个 ≤300 行） |
 | `tests/test_validator_negative.py` | 反面样本回归（20 项必须全触发）+ 空壳样本（2 项断言） |
@@ -45,6 +45,12 @@
 10. **不得提交密钥 / 令牌字面量**（校验器 4.14 会扫；命中只说位置、不回显值）。
 11. 踩到新坑 → 先写 `pitfalls/PNNN-*.md` + `pitfalls/INDEX.md` 加一行（命中 = 1）；
     **命中 ≥3 次且通用且可执行才准晋升进 `SKILL.md`**。单项目 / 单次的经验禁止进 `SKILL.md`。
+12. **只碰必须碰的**：每一行改动都要能直接追溯到需求；不顺手改相邻代码、注释、格式，不"顺便重构"；
+    发现无关死代码**只说、不删**（`code-engineering.md` §10）。
+13. **产出物含模型或提示词时**：模型用精确 id（禁 `latest` / 浮动别名）、提示词进版本控制、
+    **改完先跑黄金集再放量**；任何产物都要能回答「哪版提示词 + 哪个模型」（同文件 §4.4、§11）。
+14. **新增任何检查 / 门禁，先拿一个已知坏样本证明它会报警**，再用正常样本证明它不误报（同文件 §8.2）。
+15. **`SKILL.md` 已用到读取预算的 95%**：再往里加内容必须同时删等量内容，或整体下沉到 `references/`。
 
 ## 验证
 

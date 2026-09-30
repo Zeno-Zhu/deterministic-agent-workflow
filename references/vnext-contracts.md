@@ -463,3 +463,29 @@ Commit 最少记录：
 不能真跑时必须照此顺序给出分析与实施方案，并写明缺的环境 / 依赖 / 密钥 / 权限。
 ```
 
+### 13.5 改动边界契约
+
+```markdown
+## Change Boundary
+
+- Scope: <本次只改这些文件 / 这些函数>
+- Trace: <每一处改动对应的需求点；出现无法归属的改动 = 越界>
+- Untouched: <明确不碰的相邻代码、格式、历史死代码（发现只说、不删）>
+- Orphans: <本次改动造成的孤儿（失效 import / 变量），只清这些>
+- Rollback Test: <单独回滚本次 diff 后，行为应恰好回到改动前>
+```
+
+### 13.6 版本门契约（产出物含模型 / 提示词时必填）
+
+```markdown
+## Version Gate
+
+- Prompt Version: <提示词路径 + 版本 / 提交号>
+- Model Id: <精确 id；确认没有 latest 或浮动别名>
+- Params Snapshot: <关键参数快照路径>
+- Golden Set: <黄金集文件路径 + 条数；覆盖正常 / 边界 / 已知易错>
+- Golden Result: <通过率；与上一版的对比>
+- Rollback: <上一版怎么一键切回>
+- Canary: <先跑哪一个小样本；通过判据是什么>
+```
+

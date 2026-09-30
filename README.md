@@ -54,14 +54,14 @@ python3 tests/test_validator_negative.py                          # 反面样本
 | `references/vnext-contracts.md` | W | 契约模板库（§11 文件治理、§12 中控与渠道线、§13 代码工程） | 按需 |
 | `references/file-governance.md` | W | **文件架构与知识治理完整规范** | 产出物 >1 个文件时必读 |
 | `references/multi-platform-routing.md` | W | **多平台 / 多版本拆分与调度规范** | 有多个平台或版本时必读 |
-| `references/code-engineering.md` | W | **代码工程纪律完整规范** | 产出物含代码时必读 |
+| `references/code-engineering.md` | W | **代码工程纪律完整规范**（分类 / 复用 / 改动边界 / 任务生命周期 / 版本门与黄金集 / 输出协议；文末附**规则来源与明确不吸收的部分**） | 产出物含代码时必读 |
 | `scripts/validate-skill.py` | W | 零依赖机械校验（四组；实现拆在 `scripts/wfsb_check/`） | 每次产出后跑 |
 | `tests/` | C | 校验器的反面样本回归 | **不读**；改校验器后跑 |
 | `pitfalls/` | C | 本 skill 自己的踩坑索引（**演示三级递进怎么用**） | **默认不读**；索引命中才读那一份 |
 | `templates/` | W | 产出物骨架 9 份（README / ARCHITECTURE / 坑索引 / 坑卡 / 冷存声明 / 中控 / 渠道线契约 / 路由表 / registry） | 产出时读 |
 | `ARCHITECTURE.md` | W | 本 skill 的文件地图与排障表 | 排障时读 |
 
-## 四条最容易忘的硬规则
+## 五条最容易忘的硬规则
 
 1. **能被「按需读」的东西，永远不进「每次必读」的地方。**
    `SKILL.md` 的 `Load First` 只允许引用 H / W 层。冷存层要有索引 + `⚠ 默认不读` 自声明。
@@ -72,6 +72,8 @@ python3 tests/test_validator_negative.py                          # 反面样本
 4. **代码先分类，再定力度。** 「提交成功但结果没落盘」「表面报错只是后续表现」——
    这两句一出就是系统性处理，不许局部打补丁。单文件 ≤300 行、密钥不进代码、
    **不许假装测试过**。
+5. **只碰必须碰的，且不许改浮动版本。** 每一行改动都要能追溯到需求（顺手改无关代码是最贵的坏习惯）；
+   模型用精确 id、提示词进版本控制，**改完先跑黄金集再放量**；**新增检查先拿坏样本证明它会报警**。
 
 ## 依赖与前置
 
