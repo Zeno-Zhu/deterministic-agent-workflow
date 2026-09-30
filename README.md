@@ -15,9 +15,12 @@
 - 踩坑经验记了但没人看；同一个坑反复踩。
 - 试验代码和正式代码混在一起，分不清哪个能删。
 - ★ **多平台 / 多版本混在一个 skill 里**：长出 if/else 分支，参数串味，报错查不出来。
+- ★ **同一批代码越写越乱**：单文件几百行、密钥写死在代码里、
+  「提交成功但结果没落盘」「表面报错其实根因在前面」，每次都凭手感改。
 
-它管三件事：**能力怎么设计**（契约 / Runtime / Gate）、**文件怎么活**（分层 / 索引 / 晋升 / 毕业）、
-**多平台怎么拆**（中控 + 渠道线 + API 中控三件套）。
+它管四件事：**能力怎么设计**（契约 / Runtime / Gate）、**文件怎么活**（分层 / 索引 / 晋升 / 毕业）、
+**多平台怎么拆**（中控 + 渠道线 + API 中控三件套）、**代码怎么写稳**（分类定力度 / 复用优先 /
+任务生命周期与对账 / 输出协议）。
 
 ## 什么时候用 / 不用
 
@@ -36,7 +39,7 @@
 自检两条命令：
 
 ```bash
-python3 scripts/validate-skill.py /absolute/path/to/target-skill   # 22 项机械检查
+python3 scripts/validate-skill.py /absolute/path/to/target-skill   # 四组机械检查（治理组 4.1–4.14）
 python3 tests/test_validator_negative.py                          # 反面样本回归（改过校验器才需要）
 ```
 
@@ -46,17 +49,19 @@ python3 tests/test_validator_negative.py                          # 反面样本
 
 | 路径 | 层 | 是什么 | AI 要读吗 |
 |---|---|---|---|
-| `SKILL.md` | H | 主方法：九步创建法 + 文件治理四条 + 多平台四条 | **每次必读** |
+| `SKILL.md` | H | 主方法：九步创建法 + 文件治理四条 + 多平台四条 + 代码工程四条 | **每次必读** |
 | `references/personal-studio-standard.md` | W | 工作室标准：三维度、六 Primitive、验证分层、进化门禁 | 建/重改 skill 时读 |
-| `references/vnext-contracts.md` | W | 契约模板库（§11 文件治理契约、§12 中控与渠道线契约） | 按需 |
+| `references/vnext-contracts.md` | W | 契约模板库（§11 文件治理、§12 中控与渠道线、§13 代码工程） | 按需 |
 | `references/file-governance.md` | W | **文件架构与知识治理完整规范** | 产出物 >1 个文件时必读 |
 | `references/multi-platform-routing.md` | W | **多平台 / 多版本拆分与调度规范** | 有多个平台或版本时必读 |
-| `scripts/validate-skill.py` | W | 零依赖机械校验（5 组 22 项） | 每次产出后跑 |
+| `references/code-engineering.md` | W | **代码工程纪律完整规范** | 产出物含代码时必读 |
+| `scripts/validate-skill.py` | W | 零依赖机械校验（四组；实现拆在 `scripts/wfsb_check/`） | 每次产出后跑 |
 | `tests/` | C | 校验器的反面样本回归 | **不读**；改校验器后跑 |
-| `templates/` | W | 产出物骨架 8 份（README / ARCHITECTURE / 坑索引 / 坑卡 / 冷存声明 / 中控 / 路由表 / registry） | 产出时读 |
+| `pitfalls/` | C | 本 skill 自己的踩坑索引（**演示三级递进怎么用**） | **默认不读**；索引命中才读那一份 |
+| `templates/` | W | 产出物骨架 9 份（README / ARCHITECTURE / 坑索引 / 坑卡 / 冷存声明 / 中控 / 渠道线契约 / 路由表 / registry） | 产出时读 |
 | `ARCHITECTURE.md` | W | 本 skill 的文件地图与排障表 | 排障时读 |
 
-## 三条最容易忘的硬规则
+## 四条最容易忘的硬规则
 
 1. **能被「按需读」的东西，永远不进「每次必读」的地方。**
    `SKILL.md` 的 `Load First` 只允许引用 H / W 层。冷存层要有索引 + `⚠ 默认不读` 自声明。
@@ -64,6 +69,9 @@ python3 tests/test_validator_negative.py                          # 反面样本
    单项目 / 单次经验**禁止**进 `SKILL.md`。
 3. **多平台就拆，别加 if/else。** 一个中控只做路由，N 条渠道线各自自包含；
    加新平台 = 加一个 skill + 路由表一行，**不动存量 skill**。
+4. **代码先分类，再定力度。** 「提交成功但结果没落盘」「表面报错只是后续表现」——
+   这两句一出就是系统性处理，不许局部打补丁。单文件 ≤300 行、密钥不进代码、
+   **不许假装测试过**。
 
 ## 依赖与前置
 
@@ -73,9 +81,11 @@ python3 tests/test_validator_negative.py                          # 反面样本
 ## 维护入口
 
 - 改方法 → `SKILL.md`
-- 改细节规范 → `references/`
-- 改校验规则 → `scripts/validate-skill.py`（改完必须能对自身 `PASS`，**并跑 `tests/test_validator_negative.py` 确认检查仍然有效**）
+- 改细节规范 → `references/`（5 份，各有唯一权威：标准 / 契约 / 文件 / 多平台 / 代码）
+- 改校验规则 → `scripts/validate-skill.py`（入口）＋ `scripts/wfsb_check/`（实现；单文件 ≤300 行）。
+  改完必须能对自身 `PASS`，**并跑 `tests/test_validator_negative.py` 确认检查仍然有效**
 - 改产出物骨架 → `templates/`
+- 记一次自己踩的坑 → `pitfalls/INDEX.md` 加一行（**别急着写进 `SKILL.md`**）
 - 排障 → `ARCHITECTURE.md` §2「现象 → 查哪里」
 
 ## 安装

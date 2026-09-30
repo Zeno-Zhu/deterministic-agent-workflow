@@ -2,7 +2,9 @@
 
 > 本文件是「**产出的 Skill 里，文件怎么放、怎么长、怎么死**」的唯一权威。
 > 主方法见 `SKILL.md` 的「文件架构与知识治理」节；契约见 `references/vnext-contracts.md` 第 11 节。
-> 职责边界：本文件只管**文件**。能力设计、Runtime、判断路由归 `personal-studio-standard.md`。
+> 职责边界：本文件只管**文件**（位置与生命周期）。能力设计、Runtime、判断路由归
+> `personal-studio-standard.md`；**文件里的代码怎么写**归 `code-engineering.md`；跨平台边界归
+> `multi-platform-routing.md`。
 
 ## 0. 为什么必须治理
 
@@ -203,7 +205,7 @@ Skill 目录**只允许**放「跨任务复用的运行日志」—— 不看它
 | 信号 | 阈值 | 动作 |
 |---|---|---|
 | `SKILL.md` 超出预算档 | 见下方「读取预算」 | 抽出 `references/`；`SKILL.md` 只留触发 + 主干 + Gate + 硬规则 |
-| 单文件过大 | > 500 行 | 拆模块；`references/` 一个主题一份 |
+| 单文件过大 | 业务代码 > 300 行（硬线 600）；文档 > 500 行 | 拆模块；`references/` 一个主题一份。代码侧细则见 `code-engineering.md` §0 第 7 条 |
 | 索引膨胀 | `pitfalls/INDEX.md` > 40 行 | 已晋升项归档，只留未晋升 |
 | 测试死化 | `tests/` 中 > 30% 超 1 个月没跑 | 清理，只留活的 |
 | 同一个坑在 ≥3 个项目各记一遍 | — | 早该晋升 → 去重 + 通用化 + 写 `SKILL.md` |
@@ -253,4 +255,6 @@ Skill 目录**只允许**放「跨任务复用的运行日志」—— 不看它
 - [ ] `SKILL.md` 在自己的**触发频率档位**内（§7 读取预算）
 - [ ] **多平台 / 多版本**任务已拆成「中控 + 渠道线」，中控没内联任何渠道细节
       （见 `multi-platform-routing.md` §8）
+- [ ] `scripts/` 单文件 ≤ 300 行（例外已在 `ARCHITECTURE.md` 逐文件声明）
+- [ ] 业务代码里没有密钥 / 令牌字面量（改走环境变量或独立配置文件）
 - [ ] 跑过 `python3 scripts/validate-skill.py <skill-dir>` 且 PASS

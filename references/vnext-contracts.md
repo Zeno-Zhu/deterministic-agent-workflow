@@ -411,3 +411,55 @@ Commit 最少记录：
 - Docs Split: <一渠道一份协议文档的路径清单>
 ```
 
+## 13. 代码工程纪律契约
+
+完整规则见 `references/code-engineering.md`。
+**产出物里只要包含代码，就要填这四张表，并把结论写进目标 Skill 的 `ARCHITECTURE.md`。**
+
+### 13.1 分层与规模契约
+
+```markdown
+## Code Layout
+
+- Layers: <路由接口层 / 业务流程层 / 第三方调用层 / 数据结构层 / 提示词层 / 日志层 / 配置层 / 工具层，各自放哪>
+- Shared Modules: <≥2 条流程会复用的能力抽到了哪几个模块>
+- Single-File Limit: 300 行（软）/ 600 行（硬）
+- Declared Exceptions: 单文件行数例外：<相对路径> —— <理由>；无则 none
+- Config Split: <路径 / 模型名 / 端点 / 并发 / 轮询间隔 / 下载目录 / 日志级别 是否已配置化>
+- Secret Policy: <敏感配置走环境变量或独立配置文件；确认业务代码里没有密钥字面量>
+```
+
+### 13.2 问题处理契约
+
+```markdown
+## Issue Triage
+
+- Class: <A–J，可多选>
+- Scope: 局部修复 / 系统性处理
+- Reason: <为什么是这个力度；系统性时列出受影响文件、调用链、状态>
+- Root Cause: <多维度根因；禁止只写表面报错>
+- Synced: <同步改了哪些调用方 / 常量 / 配置 / 类型 / 日志 / 测试入口>
+```
+
+### 13.3 任务生命周期契约
+
+```markdown
+## Task Lifecycle
+
+- States: <pending→submitted→queued→running→success→download_pending→downloaded；失败态清单>
+- Ledger: <task_id / 项目归属 / 提交时间 / 状态变化 / 结果路径 / 失败原因的落盘位置>
+- Failure Routing: <仍在生成 / 无余额 / 审核失败 / 网络超时 / 提交成功未落盘 各自的处置>
+- Rerun Guard: <重跑前如何读历史记录去重，防跨项目交叉污染>
+- Reconcile: <对账入口；无文件时的五态判定：未完成 / 未下载 / 下载失败 / 平台无结果 / 记录丢失>
+```
+
+### 13.4 输出协议
+
+```markdown
+## Output Protocol
+
+代码类任务按 11 段输出：需求理解 → 问题分类 → 局部或系统性 → 根因 → 方案 →
+改动文件与影响面 → 代码实现 → 测试步骤 → 测试结果 → 清理说明 → 后续可优化项。
+不能真跑时必须照此顺序给出分析与实施方案，并写明缺的环境 / 依赖 / 密钥 / 权限。
+```
+

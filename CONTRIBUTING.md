@@ -9,14 +9,21 @@
 3. **可以删，不只可以加**：删除不改变执行的说明同样是有效贡献。
 4. **不扩展复杂度**：默认拒绝为"未来可能需要"引入 State、多 Agent、外部模型等机制。
 5. **Protected Rules 不可移除**：工作区硬规则（任务产物不写入 Skill 目录、脚本显式输出路径）与权限边界条款不得删改。
+6. **坑先备案，别急着晋升**：新踩的坑写进 `pitfalls/`（命中 = 1），**命中 ≥3 次且通用且可执行**才准进 `SKILL.md`。
+   单项目 / 单次的具体经验禁止进 `SKILL.md` —— 那是 token 黑洞。
+7. **规模红线**：`scripts/` 单文件 ≤300 行（硬线 600，例外须在 `ARCHITECTURE.md` §5 声明理由）；
+   不提交密钥 / 令牌字面量。
 
 ## 提交前自查
 
 ```bash
-# 1. 校验脚本仍然通过
-python3 scripts/validate-skill.py SKILL.md
+# 1. 校验脚本仍然通过（应 PASS + 一行 INFO）
+python3 scripts/validate-skill.py .
 
-# 2. 不引入个人环境信息（说明类文件与 .gitignore 自身含检测模式，需排除）
+# 2. 改过任何检查规则 → 反面样本必须仍然真的会报错
+python3 tests/test_validator_negative.py
+
+# 3. 不引入个人环境信息（说明类文件与 .gitignore 自身含检测模式，需排除）
 grep -RInE '/Users/|laozhu|\.trae|\.codex|\.DS_Store' --exclude=AGENTS.md --exclude=CONTRIBUTING.md --exclude=README.md --exclude=.gitignore . && echo "发现问题" || echo "clean"
 ```
 

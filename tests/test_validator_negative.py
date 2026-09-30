@@ -4,6 +4,11 @@
 用途：确认各项检查**真的会报错**。改了 validate-skill.py 的检查规则后必须跑它 ——
 只对自身跑 `PASS` 不能证明检查有效（把检查全删了也会 PASS）。
 
+两个样本：
+  · 反面样本（case_messy）    —— 违规项塞满，逐条断言 20 项触发
+  · 空壳样本（case_empty_body）—— 只有 frontmatter 的 skill 必须 FAIL，
+                                 而不是被 `if not body` 提前放行
+
 约定（见 references/file-governance.md §4）：
   - 测试代码只住 `tests/`，不进 `scripts/`；名字去掉 test 前缀才算转正。
   - 所有产物建在系统临时目录，**绝不在真实数据目录里建了再删**。
@@ -44,11 +49,14 @@ EXPECTED_ERRORS = [
     "必须有 README.md",
     "必须有 ARCHITECTURE.md",
     "路由表存在死路由",
+    "疑似硬编码密钥",
+    "超过硬线 600 行",
 ]
 
 #: 预期只给 WARN 的项
 EXPECTED_WARNINGS = [
     "疑似内联了渠道专属参数",
+    "超过软线 300 行",
 ]
 
 
@@ -70,6 +78,18 @@ def build_bad_skill(root: Path) -> Path:
     (skill / "SKILL.md.bak-20260101-000000").write_text("旧版", encoding="utf-8")
     (skill / "scripts" / "test_parse_groups.py").write_text("print(1)\n", encoding="utf-8")
     (skill / "scripts" / "e2e-smoke.mjs").write_text("// smoke\n", encoding="utf-8")
+    # 超软线（300）但不超硬线（600）→ WARN
+    (skill / "scripts" / "big_module.py").write_text(
+        "\n".join(f"step_{i} = {i}" for i in range(310)) + "\n", encoding="utf-8"
+    )
+    # 超硬线（600）→ ERROR
+    (skill / "scripts" / "huge_module.py").write_text(
+        "\n".join(f"step_{i} = {i}" for i in range(610)) + "\n", encoding="utf-8"
+    )
+    # 硬编码密钥 → ERROR。**运行时拼接**：字面写死会让本测试文件自己命中扫描。
+    (skill / "scripts" / "config_sample.py").write_text(
+        'API_KEY = "' + "sk-" + "a" * 26 + '"\n', encoding="utf-8"
+    )
     (skill / "references" / "a.md").write_text("a\n", encoding="utf-8")
     (skill / "references" / "b.md").write_text("b\n", encoding="utf-8")
     (skill / "references" / "routing-table.md").write_text(
@@ -95,6 +115,65 @@ def build_bad_skill(root: Path) -> Path:
     return skill
 
 
+def run_validator(skill: Path) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, str(VALIDATOR), str(skill)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+
+
+def case_messy(root: Path) -> list:
+    """反面样本：违规项塞满，必须逐条命中且整体 FAIL。"""
+    skill = build_bad_skill(root)
+    proc = run_validator(skill)
+    out = (proc.stdout or "") + (proc.stderr or "")
+
+    failures = []
+    if proc.returncode != 1:
+        failures.append(f"期望退出码 1（FAIL），实际 {proc.returncode}")
+    for needle in EXPECTED_ERRORS:
+        if f"ERROR: {needle}" not in out and needle not in out:
+            failures.append(f"未触发预期 ERROR：{needle}")
+    for needle in EXPECTED_WARNINGS:
+        if f"WARN: {needle}" not in out and needle not in out:
+            failures.append(f"未触发预期 WARN：{needle}")
+    if "PASS" in out:
+        failures.append("反面样本竟然 PASS")
+
+    print(out.rstrip())
+    print(
+        f"· 反面样本：期望 {len(EXPECTED_ERRORS) + len(EXPECTED_WARNINGS)} 项，"
+        f"未达标 {len(failures)} 项"
+    )
+    return failures
+
+
+def case_empty_body(root: Path) -> list:
+    """空壳样本：只有 frontmatter、没有正文 —— 必须 FAIL，不能直接放行。
+
+    回归自一次真实漏洞：`validate()` 曾用 `if not body` 判断，
+    把「正文为空」误当成「frontmatter 不合法」，
+    结果一个空壳 skill 会把全部治理检查整体跳过。
+    """
+    skill = root / "hollow-skill"
+    skill.mkdir()
+    (skill / "SKILL.md").write_text(
+        "---\nname: hollow-skill\ndescription: 空壳样本\n---\n", encoding="utf-8"
+    )
+    proc = run_validator(skill)
+    out = (proc.stdout or "") + (proc.stderr or "")
+
+    failures = []
+    if "PASS" in out:
+        failures.append("空壳 skill（无正文）竟然 PASS —— 治理检查被整体跳过了")
+    if "缺少：复盘与迭代规则" not in out:
+        failures.append("空壳 skill 未触发治理检查")
+
+    print(out.rstrip())
+    print(f"· 空壳样本：未达标 {len(failures)} 项")
+    return failures
+
+
 def main() -> int:
     if not VALIDATOR.is_file():
         print(f"找不到校验器：{VALIDATOR}")
@@ -102,26 +181,7 @@ def main() -> int:
 
     root = Path(tempfile.mkdtemp(prefix="validate-skill-fixture-"))
     try:
-        skill = build_bad_skill(root)
-        proc = subprocess.run(
-            [sys.executable, str(VALIDATOR), str(skill)],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-        )
-        out = (proc.stdout or "") + (proc.stderr or "")
-
-        failures = []
-        if proc.returncode != 1:
-            failures.append(f"期望退出码 1（FAIL），实际 {proc.returncode}")
-        for needle in EXPECTED_ERRORS:
-            if f"ERROR: {needle}" not in out and needle not in out:
-                failures.append(f"未触发预期 ERROR：{needle}")
-        for needle in EXPECTED_WARNINGS:
-            if f"WARN: {needle}" not in out and needle not in out:
-                failures.append(f"未触发预期 WARN：{needle}")
-        if "PASS" in out:
-            failures.append("反面样本竟然 PASS")
-
-        print(out.rstrip())
+        failures = case_messy(root) + case_empty_body(root)
         print("-" * 60)
         if failures:
             print(f"FAIL ｜ {len(failures)} 项未达预期：")
@@ -129,7 +189,7 @@ def main() -> int:
                 print("  - " + item)
             return 1
         total = len(EXPECTED_ERRORS) + len(EXPECTED_WARNINGS)
-        print(f"PASS ｜ 反面样本按预期触发 {total} 项检查，退出码 1。")
+        print(f"PASS ｜ 反面样本按预期触发 {total} 项检查，空壳样本 2 项断言，全部通过。")
         return 0
     finally:
         shutil.rmtree(root, ignore_errors=True)
