@@ -4,10 +4,11 @@
 用途：确认各项检查**真的会报错**。改了 validate-skill.py 的检查规则后必须跑它 ——
 只对自身跑 `PASS` 不能证明检查有效（把检查全删了也会 PASS）。
 
-两个样本：
-  · 反面样本（case_messy）    —— 违规项塞满，逐条断言 20 项触发
-  · 空壳样本（case_empty_body）—— 只有 frontmatter 的 skill 必须 FAIL，
-                                 而不是被 `if not body` 提前放行
+三个样本：
+  · 反面样本（case_messy）          —— 违规项塞满，逐条断言全部触发
+  · 行多但字符少（case_long_but_light）—— 500 行的短句 SKILL.md 不许触发规模报错
+  · 空壳样本（case_empty_body）      —— 只有 frontmatter 的 skill 必须 FAIL，
+                                       而不是被 `if not body` 提前放行
 
 约定（见 references/file-governance.md §4）：
   - 测试代码只住 `tests/`，不进 `scripts/`；名字去掉 test 前缀才算转正。
@@ -51,6 +52,7 @@ EXPECTED_ERRORS = [
     "路由表存在死路由",
     "疑似硬编码密钥",
     "超过硬线 600 行",
+    "超过 references/ 单份硬线 20000",
 ]
 
 #: 预期只给 WARN 的项
@@ -66,7 +68,10 @@ def build_bad_skill(root: Path) -> Path:
     for sub in ("scripts", "references", "pitfalls", "logs", "node_modules/leftpad"):
         (skill / sub).mkdir(parents=True, exist_ok=True)
 
-    filler = "\n".join(f"第 {i} 行填充" for i in range(120))
+    # 字符数要越过 README 触发线（2400 字符），同时留在 8000 字符档内
+    filler = "\n".join(
+        f"第 {i} 行填充内容，用于触发三件套与规模检查。" for i in range(120)
+    )
     (skill / "SKILL.md").write_text(
         "---\nname: bad-skill\ndescription: 反面样本\n---\n\n"
         "## Load First\n\n1. `pitfalls/INDEX.md`\n2. `logs/`\n\n"
@@ -92,6 +97,10 @@ def build_bad_skill(root: Path) -> Path:
     )
     (skill / "references" / "a.md").write_text("a\n", encoding="utf-8")
     (skill / "references" / "b.md").write_text("b\n", encoding="utf-8")
+    # references 单份超硬线（20000 字符）→ ERROR（它命中时会被整份读进来）
+    (skill / "references" / "huge.md").write_text(
+        "填充段落。" * 4200 + "\n", encoding="utf-8"
+    )
     (skill / "references" / "routing-table.md").write_text(
         "# 路由表\n\n"
         "| 渠道 | 触发词 | 子 skill | 关键差异（一句话） | 协议文档 |\n"
@@ -148,6 +157,46 @@ def case_messy(root: Path) -> list:
     return failures
 
 
+def case_long_but_light(root: Path) -> list:
+    """反向样本：**行数多、字符在档内 → 一律不许触发规模报错**。
+
+    回归自一次真实争议：早年拿「行数」当硬线（SKILL.md 超 400 行即 FAIL），
+    于是 500 行的短句清单被判违规，而 250 行的中文长文反而放行 ——
+    行数只反映换行习惯，字符才近似读取成本。口径改成「文档按字符」后，这条必须不再触发。
+    """
+    skill = root / "long-light-skill"
+    (skill / "references").mkdir(parents=True)
+    # 约 500 行 × 7 字符 ≈ 3900 字符：远超旧的 400 行硬线，但稳在 8000 字符档内
+    body = "\n".join(f"填充行 {i}" for i in range(500))
+    (skill / "SKILL.md").write_text(
+        "---\nname: long-light-skill\ndescription: 行多而字符少的反向样本\n---\n\n"
+        "## Load First\n\n1. `references/only.md`\n\n## 正文\n\n" + body + "\n",
+        encoding="utf-8",
+    )
+    # 人读文档超提示线 → 只许 WARN，不许 ERROR
+    (skill / "README.md").write_text("填充段落。" * 4200 + "\n", encoding="utf-8")
+    (skill / "references" / "only.md").write_text("一份参考\n", encoding="utf-8")
+
+    proc = run_validator(skill)
+    out = (proc.stdout or "") + (proc.stderr or "")
+
+    failures = []
+    if len((skill / "SKILL.md").read_text(encoding="utf-8").splitlines()) <= 400:
+        failures.append("样本构造有误：行数没有超过旧的 400 行硬线，测不出回归")
+    for needle in ("超出读取预算硬线", "已超「每日多次」档",
+                   "超过 references/ 单份硬线", "超过 references/ 单份软线"):
+        if needle in out:
+            failures.append(f"行多但字符在档内，却触发了规模报错：{needle}")
+    if "超过人读文档提示线" not in out:
+        failures.append("README 超 20000 字符未给提示（人读文档分支未生效）")
+    if "ERROR: README.md 有" in out:
+        failures.append("人读文档被误判成 ERROR（应只提示，不判 FAIL）")
+
+    print(out.rstrip())
+    print(f"· 行多但字符在档内：未达标 {len(failures)} 项")
+    return failures
+
+
 def case_empty_body(root: Path) -> list:
     """空壳样本：只有 frontmatter、没有正文 —— 必须 FAIL，不能直接放行。
 
@@ -181,7 +230,9 @@ def main() -> int:
 
     root = Path(tempfile.mkdtemp(prefix="validate-skill-fixture-"))
     try:
-        failures = case_messy(root) + case_empty_body(root)
+        failures = (
+            case_messy(root) + case_long_but_light(root) + case_empty_body(root)
+        )
         print("-" * 60)
         if failures:
             print(f"FAIL ｜ {len(failures)} 项未达预期：")
@@ -189,7 +240,10 @@ def main() -> int:
                 print("  - " + item)
             return 1
         total = len(EXPECTED_ERRORS) + len(EXPECTED_WARNINGS)
-        print(f"PASS ｜ 反面样本按预期触发 {total} 项检查，空壳样本 2 项断言，全部通过。")
+        print(
+            f"PASS ｜ 反面样本按预期触发 {total} 项检查，"
+            "反向样本 4 项断言，空壳样本 2 项断言，全部通过。"
+        )
         return 0
     finally:
         shutil.rmtree(root, ignore_errors=True)

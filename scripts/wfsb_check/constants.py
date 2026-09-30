@@ -108,16 +108,37 @@ COLD_PATH_TOKENS = (
 
 # ------------------------------------------------------------ 4.9 文档三件套
 
-README_REQUIRED_OVER_LINES = 80
+#: `SKILL.md` 超过这个体量就必须配 README（口径同为字符，不用行数）
+README_REQUIRED_OVER_CHARS = 2400
 ARCHITECTURE_NAMES = ("ARCHITECTURE.md", "TECH.md", "TECHNICAL.md", "技术文档.md")
 
-# ------------------------------------------------------------ 4.10 SKILL.md 预算
+# ------------------------------------------------------------ 4.10 文档规模与读取预算
+#
+# ★ 口径：**文档按字符，代码按行数**（代码见 4.13）。
+#
+#   文档吃的是「读一次要花多少上下文」，它跟**字符数**成正比（≈ 词元量级），
+#   跟行数无关 —— 同样 400 行，可能是 4000 字符的短表格，也可能是 24000 字符的
+#   中文长文；反过来一份 250 行的中文长文也可能早就超预算。
+#   ⇒ 文档**不拿行数当门槛**：行数只在 INFO 行展示，不参与 PASS/FAIL。
+#
+#   代码吃的是「复杂度 / 职责量」，而 `}`、缩进、短标识符让字符密度很低，
+#   字符数反而不反映规模 ⇒ 代码继续用行数。
+#
+# 分档依据是「多久读一次」（file-governance §7）：
+#   ① SKILL.md         每个任务都读          → 最紧，按触发频率分三档
+#   ② references/*.md  命中主题时读「一份」  → 中等
+#   ③ README / ARCHITECTURE / pitfalls       人读；AI 只在排障时翻 → 只提示，不判 FAIL
 
-#: SKILL.md 读取预算（file-governance §7「按触发频率分档」）
+#: ①：SKILL.md 读取预算（字符）
 SKILL_MD_WARN_CHARS = 8000     # 每日多次档
-SKILL_MD_WARN_LINES = 300
 SKILL_MD_ERROR_CHARS = 12000   # 每周数次档，母工作流上限
-SKILL_MD_ERROR_LINES = 400
+
+#: ②：references/ 单份 —— 按需读一份，超了就按主题拆
+REFERENCE_WARN_CHARS = 12000
+REFERENCE_ERROR_CHARS = 20000
+
+#: ③：人读文档（README / ARCHITECTURE / pitfalls）—— 不进每次读取路径，只给提示
+HUMAN_DOC_HINT_CHARS = 20000
 
 # ------------------------------------------------------------ 4.11 中控路由
 
@@ -197,6 +218,17 @@ SECRET_PLACEHOLDER_RE = re.compile(
 SKIP_DIRS = frozenset({".git"})
 IGNORED_FILES = frozenset({"_user_meta.json"})
 
+#: CJK 码位区间 —— 用于词元估算（中文 1 字 ≈ 1 词元）
+CJK_RANGES = (
+    (0x2E80, 0x303F),    # CJK 部首与标点
+    (0x3040, 0x30FF),    # 日文假名
+    (0x3400, 0x4DBF),    # CJK 扩展 A
+    (0x4E00, 0x9FFF),    # CJK 基本区
+    (0xF900, 0xFAFF),    # 兼容表意
+    (0xAC00, 0xD7AF),    # 谚文
+    (0x20000, 0x3FFFF),  # 扩展 B 及以后
+)
+
 
 def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
@@ -246,3 +278,19 @@ def is_cold_dir(path: Path) -> bool:
 
 def line_count(path: Path) -> int:
     return len(read_text(path).splitlines())
+
+
+def is_cjk(ch: str) -> bool:
+    code = ord(ch)
+    return any(low <= code <= high for low, high in CJK_RANGES)
+
+
+def estimate_tokens(text: str) -> int:
+    """粗略词元估算：CJK 1 字 ≈ 1 词元，其余 4 字符 ≈ 1 词元。
+
+    门槛仍落在**字符数**（稳定、直观、零歧义）；本函数只用于说明
+    「字符数还不是最终成本」：同为 12000 字符，纯中文 ≈ 12000 词元，
+    纯英文 ≈ 3000 词元 —— 差 4 倍。结果只进 INFO 行，不作判据。
+    """
+    cjk = sum(1 for ch in text if is_cjk(ch))
+    return cjk + (len(text) - cjk) // 4

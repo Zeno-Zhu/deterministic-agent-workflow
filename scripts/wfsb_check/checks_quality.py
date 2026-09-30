@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""组 4 后半（4.9–4.14）：文档、预算、中控路由、代码规模、密钥。
+"""组 4 后半（4.9–4.15）：文档、预算、中控路由、代码规模、密钥。
 
 规则权威：file-governance.md / multi-platform-routing.md / code-engineering.md
+
+★ 规模口径（4.10 / 4.15）：**文档按字符，代码按行数**。
 """
 
 from __future__ import annotations
@@ -14,17 +16,19 @@ from .constants import (
     CODE_FILE_ERROR_LINES,
     CODE_FILE_WARN_LINES,
     CODE_SCALE_DECLARATION,
+    HUMAN_DOC_HINT_CHARS,
     INLINED_CHANNEL_PARAM_RE,
-    README_REQUIRED_OVER_LINES,
+    README_REQUIRED_OVER_CHARS,
+    REFERENCE_ERROR_CHARS,
+    REFERENCE_WARN_CHARS,
     ROUTING_TABLE_REL,
     SECRET_PATTERNS,
     SECRET_PLACEHOLDER_RE,
     SKILL_MD_ERROR_CHARS,
-    SKILL_MD_ERROR_LINES,
     SKILL_MD_WARN_CHARS,
-    SKILL_MD_WARN_LINES,
     SKILL_NAME_RE,
     arch_text,
+    estimate_tokens,
     iter_text_files,
     read_text,
 )
@@ -35,10 +39,12 @@ def check_quality(skill_dir: Path, skill_md: Path, body: str, errors: list,
     source = read_text(skill_md)
     summary["line_count"] = len(source.splitlines())
     summary["char_count"] = len(source)
+    summary["token_count"] = estimate_tokens(source)
 
     declared_arch = arch_text(skill_dir)
     _check_docs_trio(skill_dir, summary, errors)
     _check_budget(declared_arch, summary, errors, warnings)
+    _check_doc_scale(skill_dir, errors, warnings)
     _check_routing(skill_dir, body, errors, warnings, summary)
     _check_code_scale(skill_dir, declared_arch, summary, errors, warnings)
     _check_secrets(skill_dir, errors)
@@ -54,10 +60,10 @@ def _check_docs_trio(skill_dir: Path, summary: dict, errors: list) -> None:
     summary["has_readme"] = has_readme
     summary["has_arch"] = has_arch
 
-    if summary["line_count"] > README_REQUIRED_OVER_LINES and not has_readme:
+    if summary["char_count"] > README_REQUIRED_OVER_CHARS and not has_readme:
         errors.append(
-            f"SKILL.md 有 {summary['line_count']} 行"
-            f"（> {README_REQUIRED_OVER_LINES}），"
+            f"SKILL.md 有 {summary['char_count']} 字符"
+            f"（> {README_REQUIRED_OVER_CHARS}），"
             "必须有 README.md（给人看 + 给 AI 速览）。"
         )
     if ((skill_dir / "scripts").is_dir() or ref_count >= 2) and not has_arch:
@@ -69,25 +75,71 @@ def _check_docs_trio(skill_dir: Path, summary: dict, errors: list) -> None:
 
 def _check_budget(declared_arch: str, summary: dict, errors: list,
                   warnings: list) -> None:
-    """4.10 SKILL.md 读取预算（按触发频率分档，file-governance §7）。"""
-    chars, lines = summary["char_count"], summary["line_count"]
-    if chars > SKILL_MD_ERROR_CHARS or lines > SKILL_MD_ERROR_LINES:
+    """4.10 SKILL.md 读取预算（按触发频率分档，file-governance §7）。
+
+    **只看字符** —— 行数不参与门槛：行数反映换行习惯，字符才近似读取成本。
+    """
+    chars = summary["char_count"]
+    lines = summary["line_count"]
+    if chars > SKILL_MD_ERROR_CHARS:
         errors.append(
             f"SKILL.md 超出读取预算硬线：{chars} 字符 / {lines} 行"
-            f"（硬线 {SKILL_MD_ERROR_CHARS} 字符 / {SKILL_MD_ERROR_LINES} 行）。"
+            f"（硬线 {SKILL_MD_ERROR_CHARS} 字符；行数只展示不判）。"
             "把细节下沉到 references/，SKILL.md 只留触发 + 主干 + Gate + 硬规则。"
         )
         return
-    if chars > SKILL_MD_WARN_CHARS or lines > SKILL_MD_WARN_LINES:
+    if chars > SKILL_MD_WARN_CHARS:
         # 若 skill 已在 ARCHITECTURE.md 显式声明自己的预算档位，就不再唠叨
         if "读取预算档" in declared_arch:
             return
         warnings.append(
-            f"SKILL.md {chars} 字符 / {lines} 行，已超「每日多次」档"
-            f"（{SKILL_MD_WARN_CHARS} 字符 / {SKILL_MD_WARN_LINES} 行）。"
+            f"SKILL.md {chars} 字符（{lines} 行），已超「每日多次」档"
+            f"（{SKILL_MD_WARN_CHARS} 字符）。"
             "确认它是否属于「每周数次或更少」档，否则下沉到 references/；"
             "确认后在 ARCHITECTURE.md 写一行 `读取预算档：<档位>`。"
         )
+
+
+def _check_doc_scale(skill_dir: Path, errors: list, warnings: list) -> None:
+    """4.15 文档规模（口径 = 字符，见 constants.py 4.10）。
+
+    分支按「多久读一次」定轻重：
+      · `references/*.md` 命中时整份读进来 → 超硬线判 FAIL、超软线提示；
+      · `README.md` / `ARCHITECTURE.md` / `pitfalls/*.md` 是**人读**文档、
+        AI 只在排障时翻 → 只提示，**永不判 FAIL**。
+    """
+    refs_dir = skill_dir / "references"
+    if refs_dir.is_dir():
+        for path in sorted(refs_dir.glob("*.md")):
+            rel = path.relative_to(skill_dir).as_posix()
+            chars = len(read_text(path))
+            if chars > REFERENCE_ERROR_CHARS:
+                errors.append(
+                    f"{rel} 有 {chars} 字符，超过 references/ 单份硬线"
+                    f" {REFERENCE_ERROR_CHARS}：它命中时会被整份读进来，"
+                    "按主题拆成多份（一份一个主题）。"
+                )
+            elif chars > REFERENCE_WARN_CHARS:
+                warnings.append(
+                    f"{rel} 有 {chars} 字符，超过 references/ 单份软线"
+                    f" {REFERENCE_WARN_CHARS}：看看是不是两个主题挤在一份里。"
+                )
+
+    human_docs = [skill_dir / "README.md"]
+    human_docs += [skill_dir / n for n in ARCHITECTURE_NAMES]
+    pitfalls_dir = skill_dir / "pitfalls"
+    if pitfalls_dir.is_dir():
+        human_docs += sorted(pitfalls_dir.glob("*.md"))
+    for path in human_docs:
+        if not path.is_file():
+            continue
+        chars = len(read_text(path))
+        if chars > HUMAN_DOC_HINT_CHARS:
+            warnings.append(
+                f"{path.relative_to(skill_dir).as_posix()} 有 {chars} 字符，"
+                f"超过人读文档提示线 {HUMAN_DOC_HINT_CHARS}：它不进每次读取路径、"
+                "不判 FAIL；但翻起来该有目录或索引。"
+            )
 
 
 def _check_routing(skill_dir: Path, body: str, errors: list, warnings: list,
@@ -138,7 +190,10 @@ def _check_routing(skill_dir: Path, body: str, errors: list, warnings: list,
 
 def _check_code_scale(skill_dir: Path, declared_arch: str, summary: dict,
                       errors: list, warnings: list) -> None:
-    """4.13 scripts/ 单文件行数（code-engineering §0 第 7 条）。"""
+    """4.13 scripts/ 单文件行数（code-engineering §0 第 7 条）。
+
+    代码**故意用行数**：`}`、缩进、短标识符让字符密度很低，字符数不反映复杂度。
+    """
     for rel in summary.get("scripts") or []:
         path = skill_dir / rel
         if path.suffix.lower() not in CODE_EXTS or not path.is_file():
@@ -147,7 +202,7 @@ def _check_code_scale(skill_dir: Path, declared_arch: str, summary: dict,
         if count > CODE_FILE_ERROR_LINES:
             errors.append(
                 f"scripts/ 下 {rel} 有 {count} 行，超过硬线"
-                f" {CODE_FILE_ERROR_LINES} 行：必须拆成 ≤300 行的模块"
+                f" {CODE_FILE_ERROR_LINES} 行：必须拆成 ≤{CODE_FILE_WARN_LINES} 行的模块"
                 "（单文件无限膨胀会让后续 AI 无法定位，见 code-engineering §3）。"
             )
         elif count > CODE_FILE_WARN_LINES:

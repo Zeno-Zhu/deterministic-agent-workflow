@@ -11,16 +11,16 @@
 | `README.md` | H | 人的定位与上手 | 说明性 | 初识时读 |
 | `ARCHITECTURE.md` | W | 本文件 | 结构说明 | 排障 / 回推时读 |
 | `references/personal-studio-standard.md` | W | 标准：三维度、六 Primitive、验证矩阵、Protected Rules | **标准层唯一权威** | 建/重改时读 |
-| `references/vnext-contracts.md` | W | 契约模板库（§1–§10 能力，§11 文件治理，§12 中控与渠道线） | **契约层唯一权威** | 按需 |
-| `references/file-governance.md` | W | 文件分层 / 踩坑三级治理 / test 毕业制 / 日志 / 文档三件套 / 读取预算 / 重构触发 | **文件层唯一权威** | 产出物 >1 文件时必读 |
+| `references/vnext-contracts.md` | W | 契约模板库（§1–§10 能力，§11 文件治理，§12 中控与渠道线，§13 代码工程） | **契约层唯一权威** | 按需 |
+| `references/file-governance.md` | W | 文件分层 / 踩坑三级治理 / test 毕业制 / 日志 / 文档三件套 / 读取预算与规模口径（文档按字符、代码按行数）/ 重构触发 | **文件层唯一权威** | 产出物 >1 文件时必读 |
 | `references/multi-platform-routing.md` | W | 拆分判据 / 中控 + 渠道线 / 多版本 / API 中控三件套 / 调度纪律 | **多平台层唯一权威** | 多平台或多版本时必读 |
 | `references/code-engineering.md` | W | 问题分类 A–J / 调试四阶段 / 复用优先 / 分层与公共模块 / 提示词与模型版本化 / JSON 契约 / 任务生命周期·幂等·可续跑·降级梯 / 日志内容 / 测试·RED 先行·黄金集 / 输出协议 / 改动边界 / 版本门 / 禁止事项 / **来源与取舍附录** | **代码层唯一权威** | 产出物含代码时必读 |
 | `scripts/validate-skill.py` | W | CLI 入口（`argparse` + `validate()` + 报告）；**入口** | 实现权威 | 每次产出后跑 |
-| `scripts/wfsb_check/constants.py` | W | 全部阈值、正则、通用工具；**改阈值只改这里** | 实现权威 | 改检查规则时读 |
+| `scripts/wfsb_check/constants.py` | W | 全部阈值、正则、通用工具（含 `estimate_tokens`）；**改阈值只改这里** | 实现权威 | 改检查规则时读 |
 | `scripts/wfsb_check/checks_core.py` | W | 组 1–3：frontmatter / workspace / iteration | 实现权威 | 同上 |
 | `scripts/wfsb_check/checks_layout.py` | W | 组 4 前半 4.1–4.8：残留 / 产物 / 未毕业 test / 草稿名 / tests / 冷存层 / 索引 / Load First | 实现权威 | 同上 |
-| `scripts/wfsb_check/checks_quality.py` | W | 组 4 后半 4.9–4.14：文档三件套 / 读取预算 / 路由与内联参数 / 单文件行数 / 密钥 | 实现权威 | 同上 |
-| `tests/test_validator_negative.py` | C | 校验器的**反面样本**回归（20 项必须全触发）+ 空壳样本 | 实现保护 | **不读**；改校验器后手动跑 |
+| `scripts/wfsb_check/checks_quality.py` | W | 组 4 后半 4.9–4.15：文档三件套 / 读取预算（按字符）/ 文档规模（references 与人读文档）/ 路由与内联参数 / 单文件行数 / 密钥 | 实现权威 | 同上 |
+| `tests/test_validator_negative.py` | C | 校验器的**反面样本**回归（21 项必须全触发）+ 反向样本 + 空壳样本 | 实现保护 | **不读**；改校验器后手动跑 |
 | `pitfalls/INDEX.md` | C | 本 skill 自己的踩坑索引（一行一坑，唯一默认可读项） | 本 skill 踩坑权威 | **默认不读**；现象命中某一行才读 |
 | `pitfalls/README.md` | C | 冷存层自声明（`⚠ 默认不读`） | 说明性 | 不读 |
 | `templates/README.template.md` | W | 产出 skill 的 README 骨架 | 骨架权威 | 产出时按需读 |
@@ -36,7 +36,7 @@
 
 **唯一权威原则**：同一件事只有一个权威文件。
 「标准」问 `personal-studio-standard.md`；「契约长什么样」问 `vnext-contracts.md`；
-「文件怎么放」问 `file-governance.md`；「多平台怎么拆」问 `multi-platform-routing.md`；
+「文件怎么放 / 多大算大」问 `file-governance.md`；「多平台怎么拆」问 `multi-platform-routing.md`；
 「代码怎么写」问 `code-engineering.md`；「主流程」问 `SKILL.md`。
 **六者不互相复述细节，只互相指路。**
 
@@ -56,7 +56,9 @@
 | 校验报「存在运行产物目录 …`__pycache__`」 | `scripts/validate-skill.py` 顶部的 `sys.dont_write_bytecode` | 入口忘了在任何子包 import 之前关掉字节码写入（坑 P001） |
 | 某个 skill 明明空壳却全项通过 | `checks_core.check_frontmatter` 的返回值语义 | 「正文为空」与「frontmatter 不合法」共用了一个哨兵值（坑 P002） |
 | 密钥检查把展示文本 / 日志文案判成密钥 | `constants.SECRET_ASSIGN_RE` 的边界与取值形态 | 正则跨了字符串边界；见坑 P003 与 `code-engineering.md` 的宽正则纪律 |
-| 产出的 skill 代码越写越乱 / 单文件几百行 | `references/code-engineering.md` §0、§3 | 没定分层、没抽公共模块；单文件超 300 行（校验器 4.13 会报） |
+| 产出的 skill 代码越写越乱 / 单文件几百行 | `references/code-engineering.md` §0、§3 | 没定分层、没抽公共模块；**代码**单文件超 300 行（校验器 4.13 会报） |
+| 某份 `references/` 越写越长、翻起来找不到东西 | `references/file-governance.md` §7.1 | 两个主题挤在一份；**文档**超 12000 字符就该按主题拆 |
+| 有人因为「超 400 行」去压文档行数 | 同文件 §7「规模口径」 | **文档按字符、代码按行数**；行数在文档侧只展示、不判分 |
 | 「提交成功但结果没落盘」反复出现 | `references/code-engineering.md` §6 | 缺状态机与对账流程，只做了「提交 + 等」 |
 | 一次修复的 diff 大得没法审 / 夹带无关改动 | 同文件 §10「改动边界」 | 顺手改了相邻代码或「顺便重构」 |
 | 同一批任务跑两遍，账单 / 产物不一样 | 同文件 §6.6「幂等」 | 没有稳定任务指纹，重试整段重来 |
@@ -77,7 +79,7 @@
 | `SKILL.md` 的文件治理四条 | `references/file-governance.md`（细则权威）、`references/vnext-contracts.md` §11 |
 | `SKILL.md` 的多平台四条 | `references/multi-platform-routing.md`（细则权威）、`references/vnext-contracts.md` §12 |
 | `SKILL.md` 的代码工程四条 | `references/code-engineering.md`（细则权威）、`references/vnext-contracts.md` §13 |
-| `file-governance.md` 的阈值（读取预算 / 索引 40 行 / 测试死化 30 天 / 单文件行数） | `scripts/wfsb_check/constants.py` 的常量、`templates/ARCHITECTURE.template.md` §5、本文件 §5 |
+| `file-governance.md` 的阈值（读取预算 / references 字符线 / 索引 40 行 / 测试死化 30 天 / 单文件行数） | `scripts/wfsb_check/constants.py` 的常量、`templates/ARCHITECTURE.template.md` §5、`vnext-contracts.md` §11、本文件 §5 |
 | `code-engineering.md` 的代码规模与密钥纪律 | `scripts/wfsb_check/constants.py`（`CODE_FILE_*` / `SECRET_*`）、`SKILL.md` §9.2、本文件 §5 |
 | `code-engineering.md` 新增/删改规则 | `SKILL.md` §9（要保持同步的**索引性**，不复制细节）、`vnext-contracts.md` §13、`file-governance.md` §6.1、本文件 §2／§3；**项目侧 `docs/工作室稳定型开发模式.md` 是它的「人读版」，两边必须一致** |
 | `multi-platform-routing.md` 的拆分判据 | `templates/ROUTING-TABLE.template.md` 的列定义、`scripts/wfsb_check/checks_quality.py` 的路由检查 |
@@ -94,7 +96,7 @@
 # ① 自检（对本 skill 自身，应 PASS + INFO 行；若报 __pycache__ 见坑 P001）
 python3 scripts/validate-skill.py .
 
-# ② 反面样本回归（改过任何检查规则就必须跑；应打印「20 项 + 空壳 2 项」全过）
+# ② 反面样本回归（改过任何检查规则就必须跑；应打印「21 项 + 反向 4 项 + 空壳 2 项」全过）
 python3 tests/test_validator_negative.py
 
 # ③ 校验任意产出 skill（可传目录或 SKILL.md）
@@ -103,12 +105,12 @@ python3 scripts/validate-skill.py /absolute/path/to/target-skill
 # ④ 结构完整性：应列出 SKILL.md README.md ARCHITECTURE.md references scripts templates tests pitfalls
 ls -1
 
-# ⑤ 单文件规模（应全部 ≤300 行）
+# ⑤ 单文件规模（代码按行数；应全部 ≤300 行）
 python -c "import glob,os;[print(len(open(p,encoding='utf-8').read().splitlines()),p) for p in sorted(glob.glob('scripts/**/*',recursive=True)) if os.path.isfile(p)]"
 ```
 
 > ① 单独跑 `PASS` **不能**证明检查有效 —— 把检查全删了它也会 PASS。
-> 所以改了校验规则一定要跑 ②，确认 **20 项反面断言 + 2 项空壳断言**仍然真的会报错。
+> 所以改了校验规则一定要跑 ②，确认 **21 项反面断言 + 4 项反向断言 + 2 项空壳断言**仍然真的会报错 / 该不报的不报。
 > ④ 跑完若多出 `scripts/wfsb_check/__pycache__` → 说明有人把入口顶部的
 > `sys.dont_write_bytecode = True` 删了（坑 P001）。
 
@@ -119,24 +121,29 @@ python -c "import glob,os;[print(len(open(p,encoding='utf-8').read().splitlines(
   - W = `references/`×5、`scripts/`（入口 1 + `wfsb_check/` 4 模块）、`templates/`×9、`ARCHITECTURE.md`
   - C = `tests/`（1 份回归测试）、`pitfalls/`（索引 1 + 正文 3，**默认不读**）
   - D = `_user_meta.json`（宿主所有）
-- **读取预算档**：**每周数次或更少**（上限 12000 字符 / 400 行）
+- **读取预算档**：**每周数次或更少**（上限 12000 字符；**行数只展示、不判分**）
   —— 它是"产 skill 的 skill"，只在建/改 skill 时触发，不是每次任务都读。
+- **规模口径**：**文档按字符，代码按行数**（`file-governance.md` §7）。
+  本 skill 5 份 `references/` 均 < 12000 字符软线；`SKILL.md` 见下方重构触发器。
 - **冷存索引**：`pitfalls/INDEX.md`（固定列，一行一坑）；`tests/` 无索引需求（单文件、无增长）
 - **默认不读声明**：`pitfalls/README.md` 首句为 `⚠ 默认不读：…`；
   `tests/` 属 C 层但只有一份文件，AI 默认不会触及 —— 一旦 `tests/` 超过 3 份或开始增长，
   **必须补 `tests/README.md` 自声明**
-- **测试归属**：`tests/test_validator_negative.py` —— 反面样本 + 空壳样本，证明检查项真的会报错。
+- **测试归属**：`tests/test_validator_negative.py` —— 反面样本 + 反向样本 + 空壳样本，证明检查项真的会报错。
   判据「我还在跑它」成立：**每次改检查规则都必须跑**。不是产品代码，不进 `scripts/`
 - **单文件行数例外**：无。全部 `scripts/` 文件均 ≤300 行；**将来要破这条，必须在本节逐文件写明理由**
 - **日志归属**：无日志。本 skill 不产生运行日志
 - **文档三件套**：`SKILL.md`（有）/ `README.md`（有）/ `ARCHITECTURE.md`（有，因为存在 `scripts/` 与 5 份 references）
 - **重构触发器**：
-  - ★ `SKILL.md` 当前 **377 行 / 11413 字符** —— 在「每周数次」档内，但**已用掉 95%**
-    （距硬线仅 23 行 / 587 字符）。**从「每日多次」档看它早已超标。**
+  - ★ `SKILL.md` 当前 **~11.4k 字符 / 377 行** —— 在「每周数次」档内，但**已用掉 95%**
+    （距硬线 12000 字符仅几百字符；**行数只展示、不判**）。**从「每日多次」档看它早已超标。**
     于是立一条硬规矩：**下一次往 `SKILL.md` 加内容，必须同时删掉等量内容**，
     或者把细节整体下沉到 `references/`。**只加不减已经不允许了。**
-  - `references/code-engineering.md` 424 行 / ~10600 字符 —— 单一主题文档，未触 §7「文档 >500 行」阈值；
+  - `references/code-engineering.md` ~10.6k 字符 / 424 行 —— 单一主题文档，未触 §7.1 的 references 软线（12000 字符）；
     再加就得考虑拆成「代码纪律」＋「AI 版本门」两份。
+  - `references/vnext-contracts.md` **496 行 / 10327 字符** —— ★ **活例证**：行数 496 已超旧的「400 行」口径，
+    但字符数稳在 12000 软线内，**属正常、无需拆**。旧口径会把它误报成"文档过长"，
+    这正是把口径从「行数」改成「字符」的直接原因 —— 契约类文档天然行多而字疏（缩进 + 短行）。
   - `templates/` 9 份、`references/` 5 份 → 未触"单目录平铺 >15"阈值，但已过半；
     **下次加骨架优先考虑合并或改用索引**（暂时不加新模板，黄金集结构写在 `code-engineering.md` §8.4）。
   - `pitfalls/INDEX.md` 4 行 → 距 40 行归档阈值很远，可放心备案新坑。

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mechanical checks for a produced or upgraded Codex Skill. —— CLI 入口
 
-四组检查，共 18 项（全部 L1 机械检查，无 LLM，仅标准库，Python 3.9+）：
+四组检查（组 1–3 ＋ 治理 4.1–4.15，全部 L1 机械检查，无 LLM，仅标准库）：
 
   1. frontmatter   name / description 合法
   2. workspace     Skill 目录不承载任务产物；脚本用显式输出路径
@@ -11,15 +11,18 @@
                    4.7 索引 / 4.8 Load First 不碰冷存层 /
                    4.9 文档三件套 / 4.10 SKILL.md 读取预算 /
                    4.11 中控路由死路由 / 4.12 内联渠道参数 /
-                   4.13 scripts 单文件行数 / 4.14 硬编码密钥
+                   4.13 scripts 单文件行数 / 4.14 硬编码密钥 /
+                   4.15 文档规模（references 按需读 / 人读文档只提示）
    规则权威：references/file-governance.md、multi-platform-routing.md、
              code-engineering.md
+
+★ 规模口径：**文档按字符，代码按行数**（详见 wfsb_check/constants.py 的 4.10 段）。
 
 实现拆在 `wfsb_check/` 包内（每个文件 ≤ 300 行，见 code-engineering §0 第 7 条）：
   constants.py       常量、正则、通用工具
   checks_core.py     组 1–3
   checks_layout.py   4.1–4.8
-  checks_quality.py  4.9–4.14
+  checks_quality.py  4.9–4.15
 
 Usage:
     python3 validate-skill.py <skill-dir | SKILL.md>
@@ -85,7 +88,7 @@ def _report(summary: dict) -> None:
     print(
         "INFO: 文件 {files} 个｜references {ref} 份｜scripts {sc} 个｜"
         "tests {ts} 个｜冷存层 {cold}｜路由 {rt}｜README {r}｜ARCHITECTURE {a}｜"
-        "SKILL.md {ln} 行 / {ch} 字符".format(
+        "SKILL.md {ch} 字符（≈{tk} 词元）/ {ln} 行".format(
             files=summary.get("files", 0),
             ref=summary.get("ref_count", 0),
             sc=len(summary.get("scripts") or []),
@@ -94,8 +97,9 @@ def _report(summary: dict) -> None:
             rt=(str(len(routes)) + " 条" if routes else "无"),
             r="有" if summary.get("has_readme") else "无",
             a="有" if summary.get("has_arch") else "无",
-            ln=summary.get("line_count", 0),
             ch=summary.get("char_count", 0),
+            tk=summary.get("token_count", 0),
+            ln=summary.get("line_count", 0),
         )
     )
 

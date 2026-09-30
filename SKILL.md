@@ -197,7 +197,7 @@ State、checkpoint、评审、trace 和本次输出属于任务目录。不要�
 
 ### 7.5 文档三件套
 
-`SKILL.md`（AI 执行，**永不可省**）/ `README.md`（人 + AI 速览，单文件且 ≤80 行时可省）/ `ARCHITECTURE.md`（后续 AI 的排障地图：文件地图 + 现象→查哪里 + 改动影响面 + 校验重建；有 `scripts/` 或 ≥2 份 `references/` 时**必须有**）。模板见 `templates/`。
+`SKILL.md`（AI 执行，**永不可省**）/ `README.md`（人 + AI 速览，单文件且 ≤2400 字符时可省）/ `ARCHITECTURE.md`（后续 AI 的排障地图：文件地图 + 现象→查哪里 + 改动影响面 + 校验重建；有 `scripts/` 或 ≥2 份 `references/` 时**必须有**）。模板见 `templates/`。★ 规模口径：**文档按字符、代码按行数**（细则见 `references/file-governance.md` §7）。
 
 ## 多平台与多版本
 

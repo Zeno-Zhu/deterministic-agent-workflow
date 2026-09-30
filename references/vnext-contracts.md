@@ -305,6 +305,9 @@ Commit 最少记录：
 
 完整规则见 `references/file-governance.md`。新建或升级 Skill 时，至少填这张表并写进目标 Skill 的 `ARCHITECTURE.md`：
 
+> ★ 规模口径：**文档按字符、代码按行数**。文档侧的「行数」只展示、不判分 ——
+> 「400 行」不是门槛（细则见 `file-governance.md` §7）。
+
 ```markdown
 ## 文件治理
 
@@ -314,6 +317,8 @@ Commit 最少记录：
 - 测试归属：tests/ 放什么；scripts/ 里有没有未毕业的 test（必须为 none）
 - 日志归属：任务目录 or Skill 目录；保留策略
 - 文档三件套：SKILL.md（必）/ README.md（有 / 省，原因）/ ARCHITECTURE.md（有 / 省，原因）
+- 读取预算档：<几乎每次任务 4000 ｜ 每日多次 8000 ｜ 每周数次或更少 12000；口径为**字符**>
+- 文档规模：<references/ 单份字符数；超 12000 软线 / 20000 硬线才需拆；人读文档超 20000 只提示、不判；无则 none>
 - 重构触发器：<当前是否已接近 §7 任一阈值>
 ```
 
