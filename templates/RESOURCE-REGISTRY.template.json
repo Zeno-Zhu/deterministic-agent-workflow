@@ -1,5 +1,5 @@
 {
-  "_comment": "API 中控 registry 骨架。★ 模型名只允许出现在本文件，业务代码里禁止硬编码。换平台 = 改这里一行。",
+  "_comment": "API registry 骨架。★ 模型名只允许出现在本文件，业务代码里禁止硬编码。换平台 = 改这里一行。",
   "_schema_version": "1",
   "channels": {
     "<channel-a>": {

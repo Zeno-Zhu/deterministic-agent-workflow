@@ -9,14 +9,15 @@
   4. governance    4.1 草稿残留 / 4.2 运行产物 / 4.3 未毕业 test /
                    4.4 草稿命名 / 4.5 tests 登记 / 4.6 冷存层自声明 /
                    4.7 索引 / 4.8 Load First 不碰冷存层 /
-                   4.9 文档三件套 / 4.10 SKILL.md 读取预算 /
-                   4.11 中控路由死路由 / 4.12 内联渠道参数 /
-                   4.13 scripts 单文件行数 / 4.14 硬编码密钥 /
-                   4.15 文档规模（references 按需读 / 人读文档只提示）
+                   4.9 文档三件套 / 4.11 主线路由死路由 / 4.12 内联渠道参数 /
+                   4.13 scripts 单文件行数 / 4.14 硬编码密钥
+                   （4.10 文档读取预算、4.15 文档规模 —— 2026-10-02 已废除）
    规则权威：references/file-governance.md、multi-platform-routing.md、
              code-engineering.md
 
-★ 规模口径：**文档按字符，代码按行数**（详见 wfsb_check/constants.py 的 4.10 段）。
+★ 规模口径：**文档字数不设门槛（2026-10-02 起）** —— `SKILL.md` / `references/` /
+  `README.md` / `ARCHITECTURE.md` 的字符数一律不判、不提示，只进 INFO 行。
+  门槛只剩一处：**代码按行数**（4.13，见 `wfsb_check/constants.py` 的 4.13 段）。
 
 实现拆在 `wfsb_check/` 包内（每个文件 ≤ 300 行，见 code-engineering §0 第 7 条）：
   constants.py       常量、正则、通用工具

@@ -15,7 +15,9 @@
 9. Validation Design
 10. Evolution Gate
 11. Skill 文件治理契约
-12. 中控与渠道线契约
+12. 主线与渠道差异层契约
+13. 代码工程纪律契约
+14. 校验器的逐字措辞要求
 
 ## 1. Runtime 选择
 
@@ -305,8 +307,9 @@ Commit 最少记录：
 
 完整规则见 `references/file-governance.md`。新建或升级 Skill 时，至少填这张表并写进目标 Skill 的 `ARCHITECTURE.md`：
 
-> ★ 规模口径：**文档按字符、代码按行数**。文档侧的「行数」只展示、不判分 ——
-> 「400 行」不是门槛（细则见 `file-governance.md` §7）。
+> ★ 规模口径：**只有代码按行数，文档字数不设门槛（2026-10-02 起）**。
+> `SKILL.md` / `references/` / README / ARCHITECTURE 的字符数与行数**只进 INFO 行、
+> 不判不提示**；唯一的规模门槛是 `scripts/` 单文件行数（细则见 `file-governance.md` §7）。
 
 ```markdown
 ## 文件治理
@@ -317,9 +320,8 @@ Commit 最少记录：
 - 测试归属：tests/ 放什么；scripts/ 里有没有未毕业的 test（必须为 none）
 - 日志归属：任务目录 or Skill 目录；保留策略
 - 文档三件套：SKILL.md（必）/ README.md（有 / 省，原因）/ ARCHITECTURE.md（有 / 省，原因）
-- 读取预算档：<几乎每次任务 4000 ｜ 每日多次 8000 ｜ 每周数次或更少 12000；口径为**字符**>
-- 文档规模：<references/ 单份字符数；超 12000 软线 / 20000 硬线才需拆；人读文档超 20000 只提示、不判；无则 none>
-- 重构触发器：<当前是否已接近 §7 任一阈值>
+- 文档分层：<SKILL.md 只放触发 + 主干 + Gate + 硬规则；细节下沉到哪些 references/ —— ★ 文档字数不设门槛，此处不填数字>
+- 重构触发器：<当前是否已接近 §7 任一阈值；代码阈值才有数字>
 ```
 
 ### 踩坑条目契约
@@ -348,43 +350,50 @@ Commit 最少记录：
 - Never Read By: <SKILL.md 的 Load First 明确不引用本目录>
 ```
 
-## 12. 中控与渠道线契约
+## 12. 主线与渠道差异层契约
 
-完整规则见 `references/multi-platform-routing.md`。**多平台 / 多版本任务必须填两份契约：中控一份、每条渠道线一份。**
+完整规则见 `references/multi-platform-routing.md`。
+**多平台 / 多版本任务必须填两类契约：主线一份、每个渠道差异层一份。**
 
-### 12.1 中控契约（Router）
+### 12.1 主线契约（Mainline）
 
 ```markdown
-## Router Contract
+## Mainline Contract
 
 - Domain: <这个域是什么>
+- Version: <主线版本标记；改版递增，供差异层锚定>
+- Full Flow: <全流程阶段清单：阶段名 → 产出物 → 闸门>
+- Fork Points: <哪些阶段会因渠道而异（每处对应一段分叉声明）>
 - Default Channel: <未点名时走哪条>
 - Declare On Use: yes｜未点名时必须显式声明走了哪条
 - Routing Table: <references/routing-table.md 路径>
-- Shared Contract: <跨渠道公共约定放哪>
-- Load Policy: <只加载被路由到的那一条渠道 skill，其余不读>
+- Load Policy: <只加载被路由到的那一条差异层，其余不读>
 - Forbidden In This Skill:
   - <渠道> 的参数上限 / 计费 / 字段名 / 模型名 / 报错特征 / 坑
-  - 各渠道 skill 的引用写进 Load First
-- Channels: <渠道 A → 子 skill 名；渠道 B → 子 skill 名；…>
-- Switch Checklist: <换渠道时读哪个协议 + 加载哪个 skill>
+  - 各差异层 skill 的引用写进 Load First
+- Channels: <渠道 A → 差异层 skill 名；渠道 B → 差异层 skill 名；…>
+- Switch Checklist: <换渠道时读哪个协议 + 加载哪个差异层>
+- Reconciliation: <主线改版后如何逐条对账差异层>
 ```
 
-### 12.2 渠道线契约（Channel）
+### 12.2 渠道差异层契约（Channel Overlay）
 
 ```markdown
-## Channel Contract
+## Channel Overlay Contract
 
 - Channel: <渠道名>
 - Skill Name: <domain>-<channel>
-- Status: active / legacy（legacy 默认不被中控选中）
+- Anchored To: <锚定主线版本 —— 必填；与主线当前版本不一致 = 待对账>
+- Status: active / legacy（legacy 默认不被主线选中）
+- Deltas: <按主线阶段逐个列；每项标类型；与主线相同的阶段**不列**>
+  - Phase N：<append 追加了什么 / replace 替换了什么 / forbid 禁止了什么>
 - Identity: <模型标识逐字符照抄 / 端点 / 鉴权>
 - Hard Limits: <参考图上限 / 时长 / 画幅 / 音频 / 必填字段 / 资源 TTL>
 - Billing: <model + unit price + 一次典型任务成本 + 提交前成本闸怎么算>
-- Flow: <本渠道特有的步骤链；与他渠道不同处标 ★>
 - Failure Signals: <信号 → 真/假 → 处置>
-- Own Pitfalls: <只记本渠道的；跨渠道共性归中控或域级 skill>
-- No Cross-Reference: <确认没有引用其他渠道的结论>
+- Own Pitfalls: <只记本渠道的；跨渠道共性归主线或域级 skill>
+- No Cross-Reference: <确认没有引用其他渠道的结论；引用主线是允许且必须的>
+- No Restatement: <确认没有复述主线的阶段 / 闸门 / 交付规范>
 ```
 
 ### 12.3 拆分判据
@@ -402,7 +411,7 @@ Commit 最少记录：
 ⇒ <任一为「是」→ 拆成渠道 skill；全为「否」→ 应做成 config/，不是新 skill>
 ```
 
-### 12.4 代码侧 API 中控契约
+### 12.4 代码侧 API 契约
 
 ```markdown
 ## API Hub Contract
@@ -494,3 +503,28 @@ Commit 最少记录：
 - Canary: <先跑哪一个小样本；通过判据是什么>
 ```
 
+
+---
+
+## 14. 校验器的逐字措辞要求
+
+`scripts/validate-skill.py` 的**组 2（工作区隔离）与组 3（受控迭代）是"逐字短语匹配"，不是语义判断**。
+关键词不对就是 ERROR，哪怕意思写到了。落地前先读 `scripts/wfsb_check/checks_core.py` 拿准措辞，
+比改一版跑一次快得多。常驻六条：
+
+| 检查项 | `SKILL.md` 正文里必须出现的话 |
+|---|---|
+| 目标项目中的新任务文件夹 | 「目标项目」+「**新**…**任务文件夹**」（`目标项目…新的任务文件夹`） |
+| 任务产物不得写入 Skill 目录 | 「绝不」+「写入」+「Skill 目录」 |
+| 脚本使用显式输出路径 | 「脚本」+「显式输出路径」 |
+| 复盘与迭代规则 | 一个标题就叫「**复盘与迭代**」的小节 |
+| 暂存后审阅再采用 | 「候选…暂存…审阅…采用」这一整句 |
+| held-out / dry-run（仅 WARN） | 正文出现 `held-out` 或 `留出`；出现 `dry-run` |
+
+**另外三条最容易踩的结构坑**：
+
+1. **`_` 前缀的目录**（如 `templates/_build/`）会被 `is_cold_dir()` 判成**死稿层**，
+   于是要求它带一份第一句写「默认不读」的自声明 README —— 否则算结构错误。
+   ⇒ **调试产物、构建中间件不要放在 skill 里**；工具一旦转正就搬进 `scripts/` 并去掉 `_`。
+2. `scripts/` 下出现 `test_*` / `*_test.*` / `try_*` / `tmp_*` 一律判**未毕业 test**，直接 ERROR。
+3. 文档里的示例命令写 `python3`；**Windows 上要换成实际解释器的完整路径**，否则照抄跑不通。

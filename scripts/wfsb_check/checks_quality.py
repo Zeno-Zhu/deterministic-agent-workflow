@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""组 4 后半（4.9–4.15）：文档、预算、中控路由、代码规模、密钥。
+"""组 4 后半（4.9–4.15）：文档三件套、主线路由、代码规模、密钥。
+（4.10 文档读取预算、4.15 文档规模于 2026-10-02 废除，编号保留不再使用。）
 
 规则权威：file-governance.md / multi-platform-routing.md / code-engineering.md
 
-★ 规模口径（4.10 / 4.15）：**文档按字符，代码按行数**。
+★ **文档字数不设门槛（2026-10-02 起）**：`SKILL.md` / `references/` /
+  `README.md` / `ARCHITECTURE.md` 的字符数**一律不判、不提示** —— 只读一次的东西
+  没理由按字数设卡；字数是**信息**（INFO 行展示），不是**门槛**。
+  ★ 规模口径只剩一处门槛：**代码按行数**（4.13，见 `code-engineering.md`）。
 """
 
 from __future__ import annotations
@@ -16,16 +20,11 @@ from .constants import (
     CODE_FILE_ERROR_LINES,
     CODE_FILE_WARN_LINES,
     CODE_SCALE_DECLARATION,
-    HUMAN_DOC_HINT_CHARS,
     INLINED_CHANNEL_PARAM_RE,
     README_REQUIRED_OVER_CHARS,
-    REFERENCE_ERROR_CHARS,
-    REFERENCE_WARN_CHARS,
     ROUTING_TABLE_REL,
     SECRET_PATTERNS,
     SECRET_PLACEHOLDER_RE,
-    SKILL_MD_ERROR_CHARS,
-    SKILL_MD_WARN_CHARS,
     SKILL_NAME_RE,
     arch_text,
     estimate_tokens,
@@ -43,8 +42,6 @@ def check_quality(skill_dir: Path, skill_md: Path, body: str, errors: list,
 
     declared_arch = arch_text(skill_dir)
     _check_docs_trio(skill_dir, summary, errors)
-    _check_budget(declared_arch, summary, errors, warnings)
-    _check_doc_scale(skill_dir, errors, warnings)
     _check_routing(skill_dir, body, errors, warnings, summary)
     _check_code_scale(skill_dir, declared_arch, summary, errors, warnings)
     _check_secrets(skill_dir, errors)
@@ -73,84 +70,15 @@ def _check_docs_trio(skill_dir: Path, summary: dict, errors: list) -> None:
         )
 
 
-def _check_budget(declared_arch: str, summary: dict, errors: list,
-                  warnings: list) -> None:
-    """4.10 SKILL.md 读取预算（按触发频率分档，file-governance §7）。
-
-    **只看字符** —— 行数不参与门槛：行数反映换行习惯，字符才近似读取成本。
-    """
-    chars = summary["char_count"]
-    lines = summary["line_count"]
-    if chars > SKILL_MD_ERROR_CHARS:
-        errors.append(
-            f"SKILL.md 超出读取预算硬线：{chars} 字符 / {lines} 行"
-            f"（硬线 {SKILL_MD_ERROR_CHARS} 字符；行数只展示不判）。"
-            "把细节下沉到 references/，SKILL.md 只留触发 + 主干 + Gate + 硬规则。"
-        )
-        return
-    if chars > SKILL_MD_WARN_CHARS:
-        # 若 skill 已在 ARCHITECTURE.md 显式声明自己的预算档位，就不再唠叨
-        if "读取预算档" in declared_arch:
-            return
-        warnings.append(
-            f"SKILL.md {chars} 字符（{lines} 行），已超「每日多次」档"
-            f"（{SKILL_MD_WARN_CHARS} 字符）。"
-            "确认它是否属于「每周数次或更少」档，否则下沉到 references/；"
-            "确认后在 ARCHITECTURE.md 写一行 `读取预算档：<档位>`。"
-        )
-
-
-def _check_doc_scale(skill_dir: Path, errors: list, warnings: list) -> None:
-    """4.15 文档规模（口径 = 字符，见 constants.py 4.10）。
-
-    分支按「多久读一次」定轻重：
-      · `references/*.md` 命中时整份读进来 → 超硬线判 FAIL、超软线提示；
-      · `README.md` / `ARCHITECTURE.md` / `pitfalls/*.md` 是**人读**文档、
-        AI 只在排障时翻 → 只提示，**永不判 FAIL**。
-    """
-    refs_dir = skill_dir / "references"
-    if refs_dir.is_dir():
-        for path in sorted(refs_dir.glob("*.md")):
-            rel = path.relative_to(skill_dir).as_posix()
-            chars = len(read_text(path))
-            if chars > REFERENCE_ERROR_CHARS:
-                errors.append(
-                    f"{rel} 有 {chars} 字符，超过 references/ 单份硬线"
-                    f" {REFERENCE_ERROR_CHARS}：它命中时会被整份读进来，"
-                    "按主题拆成多份（一份一个主题）。"
-                )
-            elif chars > REFERENCE_WARN_CHARS:
-                warnings.append(
-                    f"{rel} 有 {chars} 字符，超过 references/ 单份软线"
-                    f" {REFERENCE_WARN_CHARS}：看看是不是两个主题挤在一份里。"
-                )
-
-    human_docs = [skill_dir / "README.md"]
-    human_docs += [skill_dir / n for n in ARCHITECTURE_NAMES]
-    pitfalls_dir = skill_dir / "pitfalls"
-    if pitfalls_dir.is_dir():
-        human_docs += sorted(pitfalls_dir.glob("*.md"))
-    for path in human_docs:
-        if not path.is_file():
-            continue
-        chars = len(read_text(path))
-        if chars > HUMAN_DOC_HINT_CHARS:
-            warnings.append(
-                f"{path.relative_to(skill_dir).as_posix()} 有 {chars} 字符，"
-                f"超过人读文档提示线 {HUMAN_DOC_HINT_CHARS}：它不进每次读取路径、"
-                "不判 FAIL；但翻起来该有目录或索引。"
-            )
-
-
 def _check_routing(skill_dir: Path, body: str, errors: list, warnings: list,
                    summary: dict) -> None:
-    """4.11–4.12 中控路由（multi-platform-routing §3）。"""
+    """4.11–4.12 主线路由（multi-platform-routing §2）。"""
     routing_table = skill_dir / ROUTING_TABLE_REL
     if not routing_table.is_file():
         if "routing-table.md" in body:
             errors.append(
                 f"SKILL.md 引用了 {ROUTING_TABLE_REL}，但该文件不存在"
-                "（中控必须有路由表）。"
+                "（主线必须有路由表）。"
             )
         return
 
@@ -184,7 +112,7 @@ def _check_routing(skill_dir: Path, body: str, errors: list, warnings: list,
     if INLINED_CHANNEL_PARAM_RE.search(body):
         warnings.append(
             "SKILL.md 疑似内联了渠道专属参数（命中「N 张 / 按秒 / 按次 / ¥N」）。"
-            "中控只做路由：参数上限、计费、字段名应下沉到对应渠道 skill。"
+            "主线只承载流程骨架：参数上限、计费、字段名应下沉到对应渠道差异层。"
         )
 
 

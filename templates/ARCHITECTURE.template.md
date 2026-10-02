@@ -55,7 +55,8 @@
 ## 5. 文件治理
 
 照 `references/vnext-contracts.md` §11 与 §13 的契约填写。
-★ 规模口径：**文档按字符、代码按行数**（细则见 `references/file-governance.md` §7）。
+★ 规模口径：**文档字数不设门槛（2026-10-02 起）；唯一规模门槛是代码按行数**
+（细则见 `references/file-governance.md` §7）。
 
 - **分层**：<每个目录属于 H / W / C / D 哪一层>
 - **冷存索引**：<pitfalls/INDEX.md、logs/README.md 等；无则 none>
@@ -64,7 +65,7 @@
 - **单文件行数例外**：<`单文件行数例外：scripts/<x> —— <理由>`；无则 none>
 - **日志归属**：<任务目录 or Skill 目录；保留策略>
 - **文档三件套**：<SKILL.md（必）/ README.md（有 / 省，原因）/ ARCHITECTURE.md（有 / 省，原因）>
-- **读取预算档**：<几乎每次任务 4000 ｜ 每日多次 8000 ｜ 每周数次或更少 12000；口径为**字符**>
-  —— 这一行必须写：`SKILL.md` 超 8000 字符时校验器要看它才不报警。
-- **文档规模**：<references/ 单份字符数；超 12000 软线 / 20000 硬线才需拆；README、ARCHITECTURE、pitfalls 超 20000 只提示、不判；无则 none>
-- **重构触发器**：<当前是否已接近 `file-governance.md` §7 任一阈值>
+- **文档分层**：<SKILL.md 只放触发 + 主干 + Gate + 硬规则；细节下沉到哪些 references/；
+  ★ 文档字数不设门槛，**此处不填数字**>
+- **代码规模**：<scripts/ 各文件行数；软线 300 / 硬线 600 是本规范**唯一**仍按数字判定的规模口径>
+- **重构触发器**：<当前是否已接近 `file-governance.md` §7 任一阈值（文档只看主题，不看数字）>

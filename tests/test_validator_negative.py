@@ -6,7 +6,7 @@
 
 三个样本：
   · 反面样本（case_messy）          —— 违规项塞满，逐条断言全部触发
-  · 行多但字符少（case_long_but_light）—— 500 行的短句 SKILL.md 不许触发规模报错
+  · 长文档零告警（case_long_but_light）—— 再长再大的文档都不许触发任何规模报错
   · 空壳样本（case_empty_body）      —— 只有 frontmatter 的 skill 必须 FAIL，
                                        而不是被 `if not body` 提前放行
 
@@ -52,7 +52,6 @@ EXPECTED_ERRORS = [
     "路由表存在死路由",
     "疑似硬编码密钥",
     "超过硬线 600 行",
-    "超过 references/ 单份硬线 20000",
 ]
 
 #: 预期只给 WARN 的项
@@ -63,12 +62,13 @@ EXPECTED_WARNINGS = [
 
 
 def build_bad_skill(root: Path) -> Path:
-    """故意塞满违规项，产出一个「该被 FAIL」的中控 skill。"""
+    """故意塞满违规项，产出一个「该被 FAIL」的主线 skill。"""
     skill = root / "bad-skill"
     for sub in ("scripts", "references", "pitfalls", "logs", "node_modules/leftpad"):
         (skill / sub).mkdir(parents=True, exist_ok=True)
 
-    # 字符数要越过 README 触发线（2400 字符），同时留在 8000 字符档内
+    # 字符数要越过 README 触发线（2400 字符）—— 这是**结构完备性**判定
+    # （篇幅够大就该配 README），与已废除的「字数门槛」是两回事
     filler = "\n".join(
         f"第 {i} 行填充内容，用于触发三件套与规模检查。" for i in range(120)
     )
@@ -97,10 +97,6 @@ def build_bad_skill(root: Path) -> Path:
     )
     (skill / "references" / "a.md").write_text("a\n", encoding="utf-8")
     (skill / "references" / "b.md").write_text("b\n", encoding="utf-8")
-    # references 单份超硬线（20000 字符）→ ERROR（它命中时会被整份读进来）
-    (skill / "references" / "huge.md").write_text(
-        "填充段落。" * 4200 + "\n", encoding="utf-8"
-    )
     (skill / "references" / "routing-table.md").write_text(
         "# 路由表\n\n"
         "| 渠道 | 触发词 | 子 skill | 关键差异（一句话） | 协议文档 |\n"
@@ -158,24 +154,41 @@ def case_messy(root: Path) -> list:
 
 
 def case_long_but_light(root: Path) -> list:
-    """反向样本：**行数多、字符在档内 → 一律不许触发规模报错**。
+    """反向样本：**再长再大的文档都不许触发任何「规模」报错**。
 
     回归自一次真实争议：早年拿「行数」当硬线（SKILL.md 超 400 行即 FAIL），
-    于是 500 行的短句清单被判违规，而 250 行的中文长文反而放行 ——
-    行数只反映换行习惯，字符才近似读取成本。口径改成「文档按字符」后，这条必须不再触发。
+    于是 500 行的短句清单被判违规，而 250 行的中文长文反而放行 —— 行数只反映
+    换行习惯，不反映读取成本。之后改成「按字符设门槛」，但那些数字同样是
+    **本规范自设、非平台限制**：域级 skill（提示词规范 / 渠道协议 / 母工作流）
+    天然超出，一刀切只会逼人把内容切碎成难用的碎片。
+
+    ★ 2026-10-02 起 **文档字数不设门槛**：`SKILL.md` / `references/` / `README.md`
+      再长再大，都只进 INFO 行，**一律不许 ERROR、也不许 WARN**。
+      规模口径只剩代码按行数（见 case_messy）。
     """
     skill = root / "long-light-skill"
     (skill / "references").mkdir(parents=True)
-    # 约 500 行 × 7 字符 ≈ 3900 字符：远超旧的 400 行硬线，但稳在 8000 字符档内
+    # 500 行 SKILL.md（越过旧 400 行硬线）
     body = "\n".join(f"填充行 {i}" for i in range(500))
     (skill / "SKILL.md").write_text(
-        "---\nname: long-light-skill\ndescription: 行多而字符少的反向样本\n---\n\n"
-        "## Load First\n\n1. `references/only.md`\n\n## 正文\n\n" + body + "\n",
+        "---\nname: long-light-skill\ndescription: 超长文档的反向样本\n---\n\n"
+        "## Load First\n\n1. `references/huge.md`\n\n"
+        "## 工作区硬规则\n\n"
+        "- 任务产物落在目标项目中的新任务文件夹。\n"
+        "- 绝不把任务产物写入 Skill 目录。\n"
+        "- 脚本使用显式输出路径。\n\n"
+        "## 复盘与迭代\n\n"
+        "候选先暂存，经审阅后再采用。改共享件时先用一小批留出（held-out）组验证；\n"
+        "批量前先跑 dry-run 预检。\n\n"
+        "## 正文\n\n" + body + "\n",
         encoding="utf-8",
     )
-    # 人读文档超提示线 → 只许 WARN，不许 ERROR
+    # README 越过旧 20000 字符提示线
     (skill / "README.md").write_text("填充段落。" * 4200 + "\n", encoding="utf-8")
-    (skill / "references" / "only.md").write_text("一份参考\n", encoding="utf-8")
+    # 单份 references 越过旧 20000 字符硬线 —— 这是「字数门槛已废除」的核心回归点
+    (skill / "references" / "huge.md").write_text(
+        "填充段落。" * 4200 + "\n", encoding="utf-8"
+    )
 
     proc = run_validator(skill)
     out = (proc.stdout or "") + (proc.stderr or "")
@@ -183,17 +196,26 @@ def case_long_but_light(root: Path) -> list:
     failures = []
     if len((skill / "SKILL.md").read_text(encoding="utf-8").splitlines()) <= 400:
         failures.append("样本构造有误：行数没有超过旧的 400 行硬线，测不出回归")
-    for needle in ("超出读取预算硬线", "已超「每日多次」档",
-                   "超过 references/ 单份硬线", "超过 references/ 单份软线"):
+    if len((skill / "references" / "huge.md").read_text(encoding="utf-8")) <= 20000:
+        failures.append("样本构造有误：references 未超过旧的 20000 字符硬线，测不出回归")
+    if len((skill / "README.md").read_text(encoding="utf-8")) <= 20000:
+        failures.append("样本构造有误：README 未超过旧的 20000 字符提示线，测不出回归")
+
+    # 已废除的规模报错文案：一个字都不许再出现
+    retired = (
+        "超出读取预算", "已超「每日多次」档", "超过人读文档提示线",
+        "超过 references/ 单份硬线", "超过 references/ 单份软线",
+        "超过读取预算硬线", "超过读取预算软线",
+    )
+    for needle in retired:
         if needle in out:
-            failures.append(f"行多但字符在档内，却触发了规模报错：{needle}")
-    if "超过人读文档提示线" not in out:
-        failures.append("README 超 20000 字符未给提示（人读文档分支未生效）")
-    if "ERROR: README.md 有" in out:
-        failures.append("人读文档被误判成 ERROR（应只提示，不判 FAIL）")
+            failures.append(f"文档字数已不设门槛，却仍报出规模告警：{needle}")
+    # 除了「文档太长」，样本其余部分都合规 —— 它必须整体 PASS
+    if proc.returncode != 0:
+        failures.append(f"超长但合规的 skill 应当 PASS，实际退出码 {proc.returncode}")
 
     print(out.rstrip())
-    print(f"· 行多但字符在档内：未达标 {len(failures)} 项")
+    print(f"· 长文档零告警：未达标 {len(failures)} 项")
     return failures
 
 
@@ -242,7 +264,7 @@ def main() -> int:
         total = len(EXPECTED_ERRORS) + len(EXPECTED_WARNINGS)
         print(
             f"PASS ｜ 反面样本按预期触发 {total} 项检查，"
-            "反向样本 4 项断言，空壳样本 2 项断言，全部通过。"
+            "长文档样本（字数门槛已废）逐项断言，空壳样本 2 项断言，全部通过。"
         )
         return 0
     finally:
