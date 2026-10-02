@@ -292,3 +292,6 @@ Skill 目录**只允许**放「跨任务复用的运行日志」—— 不看它
 - [ ] `scripts/` 单文件 ≤ 300 行（例外已在 `ARCHITECTURE.md` 逐文件声明）
 - [ ] 业务代码里没有密钥 / 令牌字面量（改走环境变量或独立配置文件）
 - [ ] 跑过 `python3 scripts/validate-skill.py <skill-dir>` 且 PASS
+- [ ] ★ **做过拆分 / 搬迁 / 瘦身 ⇒ 跑过 `scripts/audit-experience-loss.py`**，
+      且每条「找不到」都判读过（刻意丢弃 / 写法差异 / **真缺口已补**）
+      （见 `experience-distillation.md` §4；**validate 只管结构，不管有没有改丢东西**）

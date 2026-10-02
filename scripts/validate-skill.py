@@ -10,7 +10,8 @@
                    4.4 草稿命名 / 4.5 tests 登记 / 4.6 冷存层自声明 /
                    4.7 索引 / 4.8 Load First 不碰冷存层 /
                    4.9 文档三件套 / 4.11 主线路由死路由 / 4.12 内联渠道参数 /
-                   4.13 scripts 单文件行数 / 4.14 硬编码密钥
+                   4.13 scripts 单文件行数 / 4.14 硬编码密钥 /
+                   4.16 主线总览表带「进入 / 跳过条件」列（仅 WARN）
                    （4.10 文档读取预算、4.15 文档规模 —— 2026-10-02 已废除）
    规则权威：references/file-governance.md、multi-platform-routing.md、
              code-engineering.md

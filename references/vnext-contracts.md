@@ -362,12 +362,16 @@ Commit 最少记录：
 
 - Domain: <这个域是什么>
 - Version: <主线版本标记；改版递增，供差异层锚定>
-- Full Flow: <全流程阶段清单：阶段名 → 产出物 → 闸门>
-- Fork Points: <哪些阶段会因渠道而异（每处对应一段分叉声明）>
+- Full Flow: <全流程阶段清单：阶段名 → 进入条件 → 产出物 → 闸门>
+- Phase Granularity: <逐阶段核对五要素（进入条件 / 输入与规范路径 / 做什么含分支 /
+  产出与负向约束 / 闸门）是否齐；不足的列出来；★ 见 multi-platform-routing.md §1.1.1>
+- Phase Files: <哪些阶段独立成了 references/<phase>-*.md；主文件只留总览与加载指引>
+- Fork Points: <哪些阶段会因渠道而异（每处对应一段分叉声明 + 「差异层该补什么」清单）>
 - Default Channel: <未点名时走哪条>
 - Declare On Use: yes｜未点名时必须显式声明走了哪条
 - Routing Table: <references/routing-table.md 路径>
-- Load Policy: <只加载被路由到的那一条差异层，其余不读>
+- Load Policy: <只加载被路由到的那一条差异层，其余不读；阶段文件按需单读>
+- Domain Pitfalls: <域级坑清单 —— 只放「换渠道仍成立」的；已过三问萃取>
 - Forbidden In This Skill:
   - <渠道> 的参数上限 / 计费 / 字段名 / 模型名 / 报错特征 / 坑
   - 各差异层 skill 的引用写进 Load First
@@ -391,7 +395,10 @@ Commit 最少记录：
 - Hard Limits: <参考图上限 / 时长 / 画幅 / 音频 / 必填字段 / 资源 TTL>
 - Billing: <model + unit price + 一次典型任务成本 + 提交前成本闸怎么算>
 - Failure Signals: <信号 → 真/假 → 处置>
-- Own Pitfalls: <只记本渠道的；跨渠道共性归主线或域级 skill>
+- Own Pitfalls: <**只记本渠道的**（换渠道不成立）；每条给可判定触发条件 + 出处强度>
+- Mainline Coverage: <主线列的「差异层该补什么」清单，逐项标 已覆盖 / 不适用>
+- Uplift Check: <★ 上浮扫描结论：本层里有「换渠道仍成立」的经验吗？
+  有 → 已上浮到主线域级坑节；没有 → 写明已扫过>
 - No Cross-Reference: <确认没有引用其他渠道的结论；引用主线是允许且必须的>
 - No Restatement: <确认没有复述主线的阶段 / 闸门 / 交付规范>
 ```

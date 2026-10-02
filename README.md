@@ -40,7 +40,9 @@
 自检两条命令：
 
 ```bash
-python3 scripts/validate-skill.py /absolute/path/to/target-skill   # 四组机械检查（治理组 4.1–4.14）
+python3 scripts/validate-skill.py /absolute/path/to/target-skill   # 四组机械检查（治理组 4.1–4.16）
+python3 scripts/audit-experience-loss.py \
+  --archive <重构前快照> --current <skills 目录>   # ★ 拆分/搬迁/瘦身后：查有没有改丢经验
 python3 tests/test_validator_negative.py                          # 反面样本回归（改过校验器才需要）
 ```
 
@@ -56,7 +58,9 @@ python3 tests/test_validator_negative.py                          # 反面样本
 | `references/file-governance.md` | W | **文件架构与知识治理完整规范** | 产出物 >1 个文件时必读 |
 | `references/multi-platform-routing.md` | W | **多平台 / 多版本拆分与调度规范**（主线必须完整、差异层只写差异、差异三类型、锚点与对账） | 有多个平台或版本时必读 |
 | `references/code-engineering.md` | W | **代码工程纪律完整规范**（分类 / 复用 / 改动边界 / 任务生命周期 / 版本门与黄金集 / 输出协议；文末附**规则来源与明确不吸收的部分**） | 产出物含代码时必读 |
+| `references/experience-distillation.md` | W | **经验归属唯一权威**：三问萃取（换渠道→换项目→换域）/ 四层归属 ＋ 环境事实 / 上浮·下沉·出域 / ★ **经验流失审计** | 要沉淀坑 / 判据 / 教训时必读 |
 | `scripts/validate-skill.py` | W | 零依赖机械校验（四组；实现拆在 `scripts/wfsb_check/`） | 每次产出后跑 |
+| `scripts/audit-experience-loss.py` | W | **经验流失审计**：快照 ⟷ 现状抽可辨识事实逐条比对，输出「找不到」清单（判三类） | ★ **拆分/搬迁/瘦身后必跑** |
 | `tests/` | C | 校验器的反面样本回归 | **不读**；改校验器后跑 |
 | `pitfalls/` | C | 本 skill 自己的踩坑索引（**演示三级递进怎么用**） | **默认不读**；索引命中才读那一份 |
 | `templates/` | W | 产出物骨架 9 份（README / ARCHITECTURE / 坑索引 / 坑卡 / 冷存声明 / 主线 / 渠道差异层契约 / 路由表 / registry） | 产出时读 |
@@ -85,7 +89,7 @@ python3 tests/test_validator_negative.py                          # 反面样本
 ## 维护入口
 
 - 改方法 → `SKILL.md`
-- 改细节规范 → `references/`（5 份，各有唯一权威：标准 / 契约 / 文件 / 多平台 / 代码）
+- 改细节规范 → `references/`（6 份，各有唯一权威：标准 / 契约 / 文件 / 多平台 / 代码 / **经验归属**）
 - 改校验规则 → `scripts/validate-skill.py`（入口）＋ `scripts/wfsb_check/`（实现；单文件 ≤300 行）。
   改完必须能对自身 `PASS`，**并跑 `tests/test_validator_negative.py` 确认检查仍然有效**
 - 改产出物骨架 → `templates/`

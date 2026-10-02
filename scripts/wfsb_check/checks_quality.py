@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""组 4 后半（4.9–4.15）：文档三件套、主线路由、代码规模、密钥。
+"""组 4 后半（4.9–4.16）：文档三件套、主线路由、主线颗粒度、代码规模、密钥。
 （4.10 文档读取预算、4.15 文档规模于 2026-10-02 废除，编号保留不再使用。）
 
 规则权威：file-governance.md / multi-platform-routing.md / code-engineering.md
@@ -43,6 +43,7 @@ def check_quality(skill_dir: Path, skill_md: Path, body: str, errors: list,
     declared_arch = arch_text(skill_dir)
     _check_docs_trio(skill_dir, summary, errors)
     _check_routing(skill_dir, body, errors, warnings, summary)
+    _check_mainline_granularity(skill_dir, body, warnings)
     _check_code_scale(skill_dir, declared_arch, summary, errors, warnings)
     _check_secrets(skill_dir, errors)
 
@@ -113,6 +114,55 @@ def _check_routing(skill_dir: Path, body: str, errors: list, warnings: list,
         warnings.append(
             "SKILL.md 疑似内联了渠道专属参数（命中「N 张 / 按秒 / 按次 / ¥N」）。"
             "主线只承载流程骨架：参数上限、计费、字段名应下沉到对应渠道差异层。"
+        )
+
+
+def _table_headers(body: str):
+    """产出所有 markdown 表头行（只有其后紧跟分隔行的才算表头）。"""
+    lines = body.splitlines()
+    for index, line in enumerate(lines[:-1]):
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        nxt = lines[index + 1].strip()
+        if not nxt.startswith("|"):
+            continue
+        if set(nxt) <= set("|-: \t"):        # 只由 | - : 空格组成 ⇒ 分隔行
+            yield stripped
+
+
+def _check_mainline_granularity(skill_dir: Path, body: str,
+                                warnings: list) -> None:
+    """4.16 主线总览表必须带「进入 / 跳过条件」列（multi-platform-routing §1.1.1）。
+
+    只对**主线**生效（判据：存在 `references/routing-table.md`）——
+    差异层不需要全流程总览。
+
+    ★ 只给 WARN：总览表的措辞可以变体（「进入条件」/「跳过条件」/「前置」），
+      正则不可能穷举；这条的作用是**在阶段表退化成"只有阶段名"时把人叫醒**。
+    """
+    if not (skill_dir / ROUTING_TABLE_REL).is_file():
+        return
+
+    # 「流程总览表」= 表头同时提到 阶段 与 产出/闸门。
+    # ⛔ 不能只看「含 Phase」—— Load First 表里常写「Phase 0–10 逐步细节」，会误命中。
+    flow = [
+        h for h in _table_headers(body)
+        if ("Phase" in h or "阶段" in h) and ("产出" in h or "闸门" in h)
+    ]
+    if not flow:
+        warnings.append(
+            "主线找不到「全流程总览」表（表头应同时含 `Phase`/`阶段` 与 `产出`/`闸门`）。"
+            "主线必须给全流程总览，否则读者不知道整体要做哪几步。"
+        )
+        return
+    thin = [h for h in flow
+            if not any(k in h for k in ("进入", "跳过", "前置", "何时", "适用"))]
+    if thin:
+        warnings.append(
+            "主线总览表缺少「进入 / 跳过条件」列（只有阶段名 = 颗粒度不足）。"
+            "每条阶段必须写清「什么情况下这步不用做」—— 否则执行者对已完成的步骤会再跑一遍。"
+            f"当前表头：{thin[0]}"
         )
 
 

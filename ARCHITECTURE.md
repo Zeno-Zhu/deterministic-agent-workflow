@@ -13,13 +13,15 @@
 | `references/personal-studio-standard.md` | W | 标准：三维度、六 Primitive、验证矩阵、Protected Rules | **标准层唯一权威** | 建/重改时读 |
 | `references/vnext-contracts.md` | W | 契约模板库（§1–§10 能力，§11 文件治理，§12 主线与渠道差异层，§13 代码工程） | **契约层唯一权威** | 按需 |
 | `references/file-governance.md` | W | 文件分层 / 踩坑三级治理 / test 毕业制 / 日志 / 文档三件套 / 规模口径（**文档字数不设门槛、代码按行数**）/ 重构触发 | **文件层唯一权威** | 产出物 >1 文件时必读 |
-| `references/multi-platform-routing.md` | W | 主线 + 渠道差异层 / 只写差异与差异三类型 / 锚点与对账 / 拆分判据 / 多版本 / 代码侧三件套 / 调度纪律 | **多平台层唯一权威** | 多平台或多版本时必读 |
+| `references/multi-platform-routing.md` | W | 主线 + 渠道差异层 / 只写差异与差异三类型 / **主线阶段五要素下限** / **「换渠道还成立吗」切分线** / 锚点与对账 / 拆分判据 / 多版本 / 代码侧三件套 / 调度纪律 | **多平台层唯一权威** | 多平台或多版本时必读 |
+| `references/experience-distillation.md` | W | **经验的三问萃取（换渠道→换项目→换域）** / 四层归属 ＋ 环境事实 / 写法三条纪律 / **上浮·下沉·出域三向复核** / 跨域方法论样例 | **经验归属唯一权威** | 要沉淀坑 / 判据 / 教训时必读 |
 | `references/code-engineering.md` | W | 问题分类 A–J / 调试四阶段 / 复用优先 / 分层与公共模块 / 提示词与模型版本化 / JSON 契约 / 任务生命周期·幂等·可续跑·降级梯 / 日志内容 / 测试·RED 先行·黄金集 / 输出协议 / 改动边界 / 版本门 / 禁止事项 / **来源与取舍附录** | **代码层唯一权威** | 产出物含代码时必读 |
 | `scripts/validate-skill.py` | W | CLI 入口（`argparse` + `validate()` + 报告）；**入口** | 实现权威 | 每次产出后跑 |
 | `scripts/wfsb_check/constants.py` | W | 全部阈值、正则、通用工具（含 `estimate_tokens`）；**改阈值只改这里** | 实现权威 | 改检查规则时读 |
 | `scripts/wfsb_check/checks_core.py` | W | 组 1–3：frontmatter / workspace / iteration | 实现权威 | 同上 |
 | `scripts/wfsb_check/checks_layout.py` | W | 组 4 前半 4.1–4.8：残留 / 产物 / 未毕业 test / 草稿名 / tests / 冷存层 / 索引 / Load First | 实现权威 | 同上 |
-| `scripts/wfsb_check/checks_quality.py` | W | 组 4 后半 4.9–4.14：文档三件套 / 主线路由死路由 / 内联渠道参数 / 单文件行数 / 密钥（4.10、4.15 已废除） | 实现权威 | 同上 |
+| `scripts/wfsb_check/checks_quality.py` | W | 组 4 后半 4.9–4.16：文档三件套 / 主线路由死路由 / 内联渠道参数 / 单文件行数 / 密钥 / **主线总览表带「进入·跳过条件」列**（4.10、4.15 已废除） | 实现权威 | 同上 |
+| `scripts/audit-experience-loss.py` | W | **经验流失审计**：拿重构前快照 vs 当前 skill 全集，抽可辨识事实逐条比对，列「找不到」的（**判读三类：刻意丢弃 / 写法差异 / 真缺口**） | 实现权威 | ★ **拆分·搬迁·瘦身类改动收尾必跑** |
 | `tests/test_validator_negative.py` | C | 校验器的**反面样本**回归（21 项必须全触发）+ 反向样本 + 空壳样本 | 实现保护 | **不读**；改校验器后手动跑 |
 | `pitfalls/INDEX.md` | C | 本 skill 自己的踩坑索引（一行一坑，唯一默认可读项） | 本 skill 踩坑权威 | **默认不读**；现象命中某一行才读 |
 | `pitfalls/README.md` | C | 冷存层自声明（`⚠ 默认不读`） | 说明性 | 不读 |
@@ -36,9 +38,10 @@
 
 **唯一权威原则**：同一件事只有一个权威文件。
 「标准」问 `personal-studio-standard.md`；「契约长什么样」问 `vnext-contracts.md`；
-「文件怎么放 / 多大算大」问 `file-governance.md`；「多平台怎么拆」问 `multi-platform-routing.md`；
+「文件怎么放 / 多大算大」问 `file-governance.md`；「多平台怎么拆 / 主线写到多细」问 `multi-platform-routing.md`；
+「这条经验该写进哪一层」问 `experience-distillation.md`；
 「代码怎么写」问 `code-engineering.md`；「主流程」问 `SKILL.md`。
-**六者不互相复述细节，只互相指路。**
+**七者不互相复述细节，只互相指路。**
 
 ## 2. 现象 → 查哪里
 
@@ -87,12 +90,15 @@
 | `code-engineering.md` 的代码规模与密钥纪律 | `scripts/wfsb_check/constants.py`（`CODE_FILE_*` / `SECRET_*`）、`SKILL.md` §9.2、本文件 §5 |
 | `code-engineering.md` 新增/删改规则 | `SKILL.md` §9（要保持同步的**索引性**，不复制细节）、`vnext-contracts.md` §13、`file-governance.md` §6.1、本文件 §2／§3；**项目侧 `docs/工作室稳定型开发模式.md` 是它的「人读版」，两边必须一致** |
 | `multi-platform-routing.md` 的拆分判据 / 术语 | `templates/ROUTING-TABLE.template.md` 的列定义、`templates/MAINLINE-SKILL.template.md`、`templates/CHANNEL-CONTRACT.template.md`、`scripts/wfsb_check/checks_quality.py` 的路由检查 |
+| `multi-platform-routing.md` §1.1 的**五要素下限** / 切分线 | `templates/MAINLINE-SKILL.template.md`（阶段卡骨架）、`SKILL.md` §8.3、**目标域主线的阶段文件**（如 `manju-creation/references/phase-*.md`） |
+| `experience-distillation.md` 的萃取判据 / 四层归属 | `SKILL.md` §8.4、`vnext-contracts.md` §12 的 `Own Pitfalls` / 主线域级坑节、`multi-platform-routing.md` §1.1.4 |
 | `scripts/validate-skill.py` 新增检查项 | `SKILL.md`「输出与验证」的检查清单、`file-governance.md` §9 落地清单、**`tests/` 的 EXPECTED 列表**、本文件 §1 |
 | 拆分 / 改名 `scripts/` 里的模块 | 本文件 §1、§5、`README.md` 目录导航、`SKILL.md`「输出与验证」里的路径 |
+| ★ **拆分 / 搬迁 / 瘦身 skill 内容** | ★ **收尾跑 `scripts/audit-experience-loss.py`**，逐条判读「刻意丢弃 / 写法差异 / 真缺口」；★ **`validate-skill.py` 只管结构，不管有没有改丢东西** |
 | 新增 / 改名 `templates/` | `README.md` 目录导航、本文件 §1 |
 | 目录结构变化 | 本文件 §1、§3、`README.md` 目录导航 |
 | 记录一次新踩的坑 | `pitfalls/INDEX.md` 加一行 + 新建 `pitfalls/PNNN-*.md`；**命中 ≥3 次且通用才改 `SKILL.md`** |
-| 回推公开仓库 | 全部（`SKILL.md` + 5 份 references + `scripts/` 6 个文件 + `tests/` + `pitfalls/` 5 个文件 + 9 份 templates + `README.md` + 本文件） |
+| 回推公开仓库 | 全部（`SKILL.md` + **6 份 references** + `scripts/` **7 个文件**（入口 1 + `wfsb_check/` 4 + **审计 1**） + `tests/` + `pitfalls/` 5 个文件 + 9 份 templates + `README.md` + 本文件） |
 
 ## 4. 校验与重建
 
@@ -109,7 +115,13 @@ python3 scripts/validate-skill.py /absolute/path/to/target-skill
 # ④ 结构完整性：应列出 SKILL.md README.md ARCHITECTURE.md references scripts templates tests pitfalls
 ls -1
 
-# ⑤ 单文件规模（代码按行数；应全部 ≤300 行）
+# ⑤ 经验流失审计（★ 拆分 / 搬迁 / 瘦身类改动后必跑；validate 只管结构，不管「有没有改丢东西」）
+python3 scripts/audit-experience-loss.py \
+  --archive "<重构前的快照目录>" --current "<skills 目录>" --only "manju-*"
+#   逐条判读三类：A 刻意丢弃 / B 写法差异 / C 真缺口（C 才要补）
+#   挂门：加 --fail-on-missing（有缺失即退出码 1）
+
+# ⑥ 单文件规模（代码按行数；应全部 ≤300 行）
 python -c "import glob,os;[print(len(open(p,encoding='utf-8').read().splitlines()),p) for p in sorted(glob.glob('scripts/**/*',recursive=True)) if os.path.isfile(p)]"
 ```
 
@@ -122,7 +134,7 @@ python -c "import glob,os;[print(len(open(p,encoding='utf-8').read().splitlines(
 
 - **分层**：
   - H = `SKILL.md`、`README.md`
-  - W = `references/`×5、`scripts/`（入口 1 + `wfsb_check/` 4 模块）、`templates/`×9、`ARCHITECTURE.md`
+  - W = `references/`×6、`scripts/`（入口 1 + `wfsb_check/` 4 模块 + **审计 1**）、`templates/`×9、`ARCHITECTURE.md`
   - C = `tests/`（1 份回归测试）、`pitfalls/`（索引 1 + 正文 3，**默认不读**）
   - D = `_user_meta.json`（宿主所有）
 - **规模口径**：**文档字数不设门槛（2026-10-02 起）；唯一规模门槛是代码按行数**（`file-governance.md` §7）。

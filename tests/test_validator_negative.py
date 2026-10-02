@@ -4,9 +4,10 @@
 用途：确认各项检查**真的会报错**。改了 validate-skill.py 的检查规则后必须跑它 ——
 只对自身跑 `PASS` 不能证明检查有效（把检查全删了也会 PASS）。
 
-三个样本：
+四个样本：
   · 反面样本（case_messy）          —— 违规项塞满，逐条断言全部触发
   · 长文档零告警（case_long_but_light）—— 再长再大的文档都不许触发任何规模报错
+  · 主线颗粒度（case_mainline_granularity）—— 总览表只有阶段名必须 WARN、带进入条件列不许 WARN
   · 空壳样本（case_empty_body）      —— 只有 frontmatter 的 skill 必须 FAIL，
                                        而不是被 `if not body` 提前放行
 
@@ -58,6 +59,7 @@ EXPECTED_ERRORS = [
 EXPECTED_WARNINGS = [
     "疑似内联了渠道专属参数",
     "超过软线 300 行",
+    "找不到「全流程总览」表",
 ]
 
 
@@ -219,6 +221,72 @@ def case_long_but_light(root: Path) -> list:
     return failures
 
 
+def case_mainline_granularity(root: Path) -> list:
+    """主线颗粒度样本：总览表**只有阶段名** → 必须 WARN；带「进入 / 跳过条件」列 → 不许 WARN。
+
+    回归自一次真实事故：主线被掏成「一句话 + 一张表」，Phase 1/2/3 只剩"跑一条命令"，
+    执行者**看不出"这步什么情况下不用做"** ⇒ 对已完成的步骤再跑一遍
+    （重跑 = 白烧钱 / 覆盖已完成产物 / 全量重编号作废已交付物）。
+    规范见 `references/multi-platform-routing.md` §1.1.1。
+    """
+    failures = []
+
+    def build(name: str, header: str) -> Path:
+        skill = root / name
+        (skill / "references").mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\nname: " + name + "\ndescription: 主线颗粒度样本\n---\n\n"
+            "## 全流程总览\n\n" + header + "\n"
+            "|---|---|---|---|\n"
+            "| 0 | 初始化 | 配置文件 | — |\n"
+            "| 1 | 剧本处理 | 分集剧本 | — |\n\n"
+            "## 工作区硬规则\n\n"
+            "- 任务产物落在目标项目中的新任务文件夹。\n"
+            "- 绝不把任务产物写入 Skill 目录。\n"
+            "- 脚本使用显式输出路径。\n\n"
+            "## 复盘与迭代\n\n"
+            "候选先暂存，经审阅后再采用。改共享件时先用一小批留出（held-out）组验证；\n"
+            "批量前先跑 dry-run 预检。\n",
+            encoding="utf-8",
+        )
+        (skill / "references" / "routing-table.md").write_text(
+            "# 路由表\n\n"
+            "| 渠道 | 触发词 | 子 skill | 关键差异（一句话） | 协议文档 |\n"
+            "|---|---|---|---|---|\n"
+            "| 真渠道 | real | `ml-real-channel` | 按次计费 | `channels/real.md` |\n",
+            encoding="utf-8",
+        )
+        sibling = root / "ml-real-channel"
+        if not sibling.exists():
+            sibling.mkdir()
+            (sibling / "SKILL.md").write_text(
+                "---\nname: ml-real-channel\ndescription: 占位渠道线\n---\n",
+                encoding="utf-8",
+            )
+        return skill
+
+    needle = "缺少「进入 / 跳过条件」列"
+
+    thin = build("ml-thin", "| Phase | 干什么 | 产出物 | 闸门 |")
+    out_thin = _run(thin)
+    if needle not in out_thin:
+        failures.append("总览表只有阶段名（无进入条件列），却没报颗粒度不足")
+
+    good = build("ml-good", "| Phase | 干什么 | 进入 / 跳过条件 | 产出物 | 闸门 |")
+    out_good = _run(good)
+    if needle in out_good:
+        failures.append("总览表已带「进入 / 跳过条件」列，却被误报")
+
+    print(out_thin.rstrip())
+    print(f"· 主线颗粒度：未达标 {len(failures)} 项")
+    return failures
+
+
+def _run(skill: Path) -> str:
+    proc = run_validator(skill)
+    return (proc.stdout or "") + (proc.stderr or "")
+
+
 def case_empty_body(root: Path) -> list:
     """空壳样本：只有 frontmatter、没有正文 —— 必须 FAIL，不能直接放行。
 
@@ -253,7 +321,10 @@ def main() -> int:
     root = Path(tempfile.mkdtemp(prefix="validate-skill-fixture-"))
     try:
         failures = (
-            case_messy(root) + case_long_but_light(root) + case_empty_body(root)
+            case_messy(root)
+            + case_long_but_light(root)
+            + case_mainline_granularity(root)
+            + case_empty_body(root)
         )
         print("-" * 60)
         if failures:
@@ -264,7 +335,8 @@ def main() -> int:
         total = len(EXPECTED_ERRORS) + len(EXPECTED_WARNINGS)
         print(
             f"PASS ｜ 反面样本按预期触发 {total} 项检查，"
-            "长文档样本（字数门槛已废）逐项断言，空壳样本 2 项断言，全部通过。"
+            "长文档样本（字数门槛已废）逐项断言，主线颗粒度样本双向断言，"
+            "空壳样本 2 项断言，全部通过。"
         )
         return 0
     finally:
